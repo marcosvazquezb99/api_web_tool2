@@ -16,7 +16,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
 
-         $schedule->command('time-tracking:send-report')->weekdays()->at('18:00');
+         $schedule->command('time-tracking:send-report 1')->weekdays()->at('18:00');
+         $schedule->command('time-tracking:send-report 5')->fridays()->at('18:00');
+         $schedule->command('time-tracking:send-report 30')->monthlyOn('30','18:00');
 
     }
 

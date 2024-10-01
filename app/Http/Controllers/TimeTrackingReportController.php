@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Mail;
@@ -102,12 +103,12 @@ class TimeTrackingReportController extends Controller
     }
 
     /**
-     * Procesar los datos obtenidos de Monday.com y generar el reporte.
+     * Procesar los datos obtenidos de Monday.com y generar el reporte desde una fecha basada en días atrás.
      */
-    public function processMondayData()
+    public function processMondayData($daysAgo)
     {
         $data = $this->getMondayData();
-        $today = date('Y-m-d');
+        $fromDate = Carbon::now()->subDays($daysAgo); // Obtener fecha límite
         $usersData = []; // Agrupar las actividades por usuario
 
         // Iteramos sobre los tableros
@@ -119,7 +120,12 @@ class TimeTrackingReportController extends Controller
                             $startTime = $record['started_at'] ?? $record['manually_entered_start_date'];
                             $endTime = $record['ended_at'] ?? $record['manually_entered_end_date'];
 
-                            if ($startTime && $endTime && strpos($startTime, $today) === 0) {
+                            // Convertir a fechas de Carbon
+                            $startTimeCarbon = Carbon::parse($startTime);
+                            $endTimeCarbon = Carbon::parse($endTime);
+
+                            // Si las fechas de inicio están dentro del rango de días
+                            if ($startTimeCarbon->greaterThanOrEqualTo($fromDate)) {
                                 $manuallyEntered = $record['manually_entered_start_date'] || $record['manually_entered_end_time'] ? 'Sí' : 'No';
 
                                 // Obtener nombres de usuario
@@ -161,12 +167,13 @@ class TimeTrackingReportController extends Controller
         return $usersData;
     }
 
+
     /**
-     * Generar el reporte de horas trabajadas.
+     * Generar el reporte de horas trabajadas basado en días atrás.
      */
-    public function generateReport()
+    public function generateReport($daysAgo)
     {
-        $usersData = $this->processMondayData();
+        $usersData = $this->processMondayData($daysAgo);
         $report = '';
         $globalHours = 0;
 

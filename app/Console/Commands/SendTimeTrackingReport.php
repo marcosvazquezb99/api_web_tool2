@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 class SendTimeTrackingReport extends Command
 {
     // Nombre y descripción del command
-    protected $signature = 'time-tracking:send-report';
+    protected $signature = 'time-tracking:send-report {days=7}';
     protected $description = 'Enviar el reporte diario de tiempos del equipo desde Monday.com';
 
     /**
@@ -25,11 +25,12 @@ class SendTimeTrackingReport extends Command
      */
     public function handle()
     {
+        $days = $this->argument('days');
         // Instanciar el controlador de reportes de Monday
         $timeTrackingReportController = new TimeTrackingReportController();
 
         // Generar el reporte
-        $report = $timeTrackingReportController->generateReport();
+        $report = $timeTrackingReportController->generateReport($days);
 
         // Instanciar el controlador de Slack
         $slackController = new SlackController();
