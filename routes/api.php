@@ -54,3 +54,4 @@ Route::middleware('auth:sanctum')->post('/revoke-current-token', [TokenControlle
 
 // Ruta para revocar todos los tokens del usuario
 Route::middleware('auth:sanctum')->post('/revoke-all-tokens', [TokenController::class, 'revokeAllTokens']);
+Route::middleware('auth:sanctum')->post('/create-token', [TokenController::class, 'createToken']);
