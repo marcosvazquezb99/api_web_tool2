@@ -175,11 +175,11 @@ class TimeTrackingReportController extends Controller
     {
         $usersData = $this->processMondayData($daysAgo);
         $report = '';
-        $globalHours = 0;
+
 
         foreach ($usersData as $userId => $user) {
             $report .= "Usuario: {$user['name']}\n";
-
+            $globalHours = 0;
             foreach ($user['tableros'] as $tablero => $actividades) {
                 $totalHours = 0;
                 $report .= "  Tablero: $tablero:\n";
