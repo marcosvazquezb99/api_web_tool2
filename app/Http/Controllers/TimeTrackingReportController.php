@@ -178,24 +178,25 @@ class TimeTrackingReportController extends Controller
 
 
         foreach ($usersData as $userId => $user) {
-            $report .= "Usuario: {$user['name']}\n";
+            $report .= "Usuario: *{$user['name']}*\n";
             $globalHours = 0;
             foreach ($user['tableros'] as $tablero => $actividades) {
                 $totalHours = 0;
-                $report .= "  Tablero: $tablero:\n";
+                $report .= "  Tablero: *$tablero*:\n";
 
                 foreach ($actividades as $actividad) {
-                    $report .= "    Actividad: {$actividad['tarea']}\n";
-                    $report .= "      Tiempo: {$actividad['duracion']} horas\n";
+                    $report .= "    Actividad: *{$actividad['tarea']}*\n";
+                    $report .= "      Tiempo: ".gmdate('H:i', $actividad['duracion'] * 3600)." horas\n";
                     $report .= "      Ingresado manualmente: {$actividad['manual']}\n";
                     $totalHours += $actividad['duracion'];
                 }
-
-                $report .= "  Total de horas trabajadas en $tablero: " . number_format($totalHours, 2) . " horas\n";
+                $report .= "  Total de horas trabajadas en $tablero: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
                 $globalHours += $totalHours;
             }
 
-            $report .= "  Total de horas trabajadas por {$user['name']}: " . number_format($globalHours, 2) . " horas\n\n";
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $globalHours * 3600) . " horas\n";
+            //añadir separador
+            $report .= "*----------------------------------------*\n\n";
         }
 
         return $report;

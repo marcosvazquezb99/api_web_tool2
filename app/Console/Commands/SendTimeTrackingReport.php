@@ -4,12 +4,13 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\SlackController;
 use App\Http\Controllers\TimeTrackingReportController;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class SendTimeTrackingReport extends Command
 {
     // Nombre y descripción del command
-    protected $signature = 'time-tracking:send-report {days=7}';
+    protected $signature = 'time-tracking:send-report {days=7} {label=Reporte de tiempos}';
     protected $description = 'Enviar el reporte diario de tiempos del equipo desde Monday.com';
 
     /**
@@ -26,11 +27,17 @@ class SendTimeTrackingReport extends Command
     public function handle()
     {
         $days = $this->argument('days');
+        $label = $this->argument('label');
         // Instanciar el controlador de reportes de Monday
         $timeTrackingReportController = new TimeTrackingReportController();
-
+        $fromDate = Carbon::now()->subDays($days); // Obtener fecha límite
+        $now = Carbon::now(); // Obtener fecha actual
+        //crear titulo del reporte
+        $report = "*$label*\n\n";
+        // Crear el encabezado del reporte
+        $report .= "Desde el *{$fromDate->format('d/m/Y')}* hasta el *{$now->format('d/m/Y')}*:\n\n";
         // Generar el reporte
-        $report = $timeTrackingReportController->generateReport($days);
+        $report .= $timeTrackingReportController->generateReport($days);
 
         // Instanciar el controlador de Slack
         $slackController = new SlackController();
