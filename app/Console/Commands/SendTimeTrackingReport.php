@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 class SendTimeTrackingReport extends Command
 {
     // Nombre y descripción del comando
-    protected $signature = 'time-tracking:send-report {days=7} {label=Reporte de tiempos}';
+    protected $signature = 'time-tracking:send-report {days=7} {label=Reporte de tiempos} {tipo=completo} {channel=C07PF06HF46} ';
     protected $description = 'Enviar el reporte diario de tiempos del equipo desde Monday.com';
 
     /**
@@ -28,6 +28,8 @@ class SendTimeTrackingReport extends Command
     {
         $days = $this->argument('days');
         $label = $this->argument('label');
+        $channel = $this->argument('channel');
+        $tipo = $this->argument('tipo');
 
         // Instanciar el controlador de reportes de Monday
         $timeTrackingReportController = new TimeTrackingReportController();
@@ -43,13 +45,13 @@ class SendTimeTrackingReport extends Command
         $report .= "Desde el *{$fromDate->format('d/m/Y H:i')}* hasta el *{$now->format('d/m/Y H:i')}*:\n\n";
 
         // Generar el reporte con las fechas correctas
-        $report .= $timeTrackingReportController->generateReport($fromDate->toDateString(), $now->toDateString());
+        $report .= $timeTrackingReportController->generateReport($fromDate->toDateString(), $now->toDateString(), $tipo);
 
         // Instanciar el controlador de Slack
         $slackController = new SlackController();
 
         // Enviar el reporte al canal de Slack (sustituye 'C07PF06HF46' por el ID de tu canal)
-        $response = $slackController->chat_post_message('C07PF06HF46', $report);
+        $response = $slackController->chat_post_message($channel, $report);
 
         // Mostrar un mensaje en la consola si fue exitoso
         if ($response == 200) {

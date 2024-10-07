@@ -3,10 +3,7 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Mail;
 
 class TimeTrackingReportController extends Controller
 {
@@ -237,7 +234,7 @@ class TimeTrackingReportController extends Controller
                         foreach ($column['history'] as $record) {
 
                             $startTime = $record['started_at'] ?? $record['manually_entered_start_date'];
-                            $endTime = $record['ended_at'] ?? $record['manually_entered_end_date'] ;
+                            $endTime = $record['ended_at'] ?? $record['manually_entered_end_date'];
 
                             // Convertir a fechas de Carbon
                             $startTimeCarbon = Carbon::parse($startTime);
@@ -245,7 +242,7 @@ class TimeTrackingReportController extends Controller
 
                             // Si las fechas de inicio y fin están dentro del rango
 
-                            if ( $endTime !== false && $startTimeCarbon->between($fromDate, $toDate) && $endTimeCarbon->between($fromDate, $toDate)) {
+                            if ($endTime !== false && $startTimeCarbon->between($fromDate, $toDate) && $endTimeCarbon->between($fromDate, $toDate)) {
                                 $manuallyEntered = !empty($record['manually_entered_start_date']) || !empty($record['manually_entered_end_time']) ? 'Sí' : 'No';
 
                                 // Obtener nombres de usuario
@@ -254,28 +251,28 @@ class TimeTrackingReportController extends Controller
 
                                 // Solo procesar si es el mismo usuario quien inicia y termina
 //                                if ($record['started_user_id'] === $record['ended_user_id']) {
-                                    $userId = $record['started_user_id'];
+                                $userId = $record['started_user_id'];
 
-                                    // Crear entrada para el usuario si no existe
-                                    if (!isset($usersData[$userId])) {
-                                        $usersData[$userId] = [
-                                            'name' => $startedUserName,
-                                            'tableros' => []
-                                        ];
-                                    }
-
-                                    // Crear entrada para el tablero si no existe
-                                    if (!isset($usersData[$userId]['tableros'][$board['name']])) {
-                                        $usersData[$userId]['tableros'][$board['name']] = [];
-                                    }
-
-                                    // Calcular la duración
-                                    $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
-                                    $usersData[$userId]['tableros'][$board['name']][] = [
-                                        'tarea' => $item['name'],
-                                        'duracion' => number_format($duration, 2),
-                                        'manual' => $manuallyEntered
+                                // Crear entrada para el usuario si no existe
+                                if (!isset($usersData[$userId])) {
+                                    $usersData[$userId] = [
+                                        'name' => $startedUserName,
+                                        'tableros' => []
                                     ];
+                                }
+
+                                // Crear entrada para el tablero si no existe
+                                if (!isset($usersData[$userId]['tableros'][$board['name']])) {
+                                    $usersData[$userId]['tableros'][$board['name']] = [];
+                                }
+
+                                // Calcular la duración
+                                $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
+                                $usersData[$userId]['tableros'][$board['name']][] = [
+                                    'tarea' => $item['name'],
+                                    'duracion' => number_format($duration, 2),
+                                    'manual' => $manuallyEntered
+                                ];
 //                                }
                             }
                         }
@@ -288,7 +285,6 @@ class TimeTrackingReportController extends Controller
     }
 
 
-
     /**
      * Generar el reporte de horas trabajadas basado en un rango de fechas.
      *
@@ -296,7 +292,7 @@ class TimeTrackingReportController extends Controller
      * @param string $toDate Fecha de fin en formato 'YYYY-MM-DD'.
      * Si solo se proporciona uno, o ambos son iguales, se calculará para solo ese día.
      */
-    public function generateReport($fromDate, $toDate = null)
+    public function generateReport($fromDate, $toDate = null, $tipo)
     {
         // Si no se proporciona $toDate o si ambos son iguales, procesar solo para $fromDate
         if (is_null($toDate) || $fromDate === $toDate) {
@@ -312,22 +308,25 @@ class TimeTrackingReportController extends Controller
             $globalHours = 0;
             foreach ($user['tableros'] as $tablero => $actividades) {
                 $totalHours = 0;
-                $report .= "  Tablero: *$tablero*:\n";
+                $report .= "  Tablero: *$tablero*";
 
-                foreach ($actividades as $actividad) {
+                if ($tipo != 'simple') {
+                    $report .= ":\n";
+                    foreach ($actividades as $actividad) {
 //                    dd($actividad);
-                    try {
-                        $report .= "    Actividad: *{$actividad['tarea']}* - ";
-                        $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
-                        $report .= "Manual: {$actividad['manual']}\n";
-                        $totalHours += $actividad['duracion'];
-                    }catch (\Exception $e) {
-                        dd($e, $actividad);
-                    }
+                        try {
+                            $report .= "    Actividad: *{$actividad['tarea']}* - ";
+                            $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
+                            $report .= "Manual: {$actividad['manual']}\n";
+                            $totalHours += $actividad['duracion'];
+                        } catch (\Exception $e) {
+                            error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
+                        }
 
+                    }
                 }
 
-                $report .= "  Total de horas trabajadas en $tablero: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
+                $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
                 $globalHours += $totalHours;
             }
 
@@ -345,11 +344,11 @@ class TimeTrackingReportController extends Controller
     {
         $emailAddress = 'jose@somospecesvoladores.com';
         $subject = 'Reporte diario de tiempos del equipo';
-        $message = $this->generateReport();
+//        $message = $this->generateReport();
 //dd($message);
         // Enviar correo usando la función Mail de Laravel
-        SlackController::class->chat_post_message('C07PF06HF46', $message);
+//        SlackController::class->chat_post_message('C07PF06HF46', $message);
 
-        return response()->json(['message' => 'Reporte enviado exitosamente']);
+//        return response()->json(['message' => 'Reporte enviado exitosamente']);
     }
 }
