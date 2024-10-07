@@ -1179,9 +1179,9 @@ class SlackController extends Controller
                 'attachments' => $request->input('attachments'),
                 'blocks' => $request->input('blocks'),
                 'icon_emoji' => $request->input('icon_emoji'),
-                'icon_url' => $request->input('icon_url'),
-                'link_names' => $request->input('link_names'),
-                'mrkdwn' => $request->input('mrkdwn'),
+                'icon_url' => $request->input('icon_url'),*/
+                'link_names' => 1,
+                /*'mrkdwn' => $request->input('mrkdwn'),
                 'parse' => $request->input('parse'),
                 'reply_broadcast' => $request->input('reply_broadcast'),*/
                 'text' => $message/*,
