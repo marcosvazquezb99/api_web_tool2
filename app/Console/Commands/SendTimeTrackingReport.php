@@ -45,7 +45,7 @@ class SendTimeTrackingReport extends Command
         $report .= "Desde el *{$fromDate->format('d/m/Y H:i')}* hasta el *{$now->format('d/m/Y H:i')}*:\n\n";
 
         // Generar el reporte con las fechas correctas
-        $report .= $timeTrackingReportController->generateReport($fromDate->toDateString(), $now->toDateString(), $tipo);
+        $report .= $timeTrackingReportController->generateReport($fromDate->toDateString(), $tipo, $now->toDateString());
 
         // Instanciar el controlador de Slack
         $slackController = new SlackController();

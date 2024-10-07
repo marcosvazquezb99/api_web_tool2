@@ -289,10 +289,10 @@ class TimeTrackingReportController extends Controller
      * Generar el reporte de horas trabajadas basado en un rango de fechas.
      *
      * @param string $fromDate Fecha de inicio en formato 'YYYY-MM-DD'.
-     * @param string $toDate Fecha de fin en formato 'YYYY-MM-DD'.
+     * @param string|null $toDate Fecha de fin en formato 'YYYY-MM-DD'.
      * Si solo se proporciona uno, o ambos son iguales, se calculará para solo ese día.
      */
-    public function generateReport($fromDate, $toDate = null, $tipo)
+    public function generateReport(string $fromDate, $type, string $toDate = null)
     {
         // Si no se proporciona $toDate o si ambos son iguales, procesar solo para $fromDate
         if (is_null($toDate) || $fromDate === $toDate) {
@@ -310,20 +310,20 @@ class TimeTrackingReportController extends Controller
                 $totalHours = 0;
                 $report .= "  Tablero: *$tablero*";
 
-                if ($tipo != 'simple') {
-                    $report .= ":\n";
-                    foreach ($actividades as $actividad) {
+                $report .= ":\n";
+                foreach ($actividades as $actividad) {
 //                    dd($actividad);
-                        try {
+                    try {
+                        if ($type != 'simple') {
                             $report .= "    Actividad: *{$actividad['tarea']}* - ";
                             $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
                             $report .= "Manual: {$actividad['manual']}\n";
-                            $totalHours += $actividad['duracion'];
-                        } catch (\Exception $e) {
-                            error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
                         }
-
+                        $totalHours += $actividad['duracion'];
+                    } catch (\Exception $e) {
+                        error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
                     }
+
                 }
 
                 $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
