@@ -16,10 +16,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
 
-        $schedule->command('time-tracking:send-report 0 "Reporte Diario" "simple" "C07R3NTSV09"')->weekdays()->at('18:00');
-        $schedule->command('time-tracking:send-report 0 "Reporte Diario" "completo"')->weekdays()->at('18:00');
-        $schedule->command('time-tracking:send-report 5 "Reporte Semanal" ')->fridays()->at('18:00');
-        $schedule->command('time-tracking:send-report 30 "Reporte mensual" ')->monthlyOn('30', '18:00');
+        $schedule->command('time-tracking:send-report --days=0 --label="Reporte Diario" --tipo="simple" --channel"C07R3NTSV09"')->weekdays()->at('18:00');
+        $schedule->command('time-tracking:send-report --days=0 --label="Reporte Diario" --tipo="completo"')->weekdays()->at('18:00');
+        $schedule->command('time-tracking:send-report --days=5 --label="Reporte Semanal" ')->fridays()->at('18:00');
+        $schedule->command('time-tracking:send-report --days=30 --label="Reporte mensual" ')->monthlyOn('30', '18:00');
 
     }
 

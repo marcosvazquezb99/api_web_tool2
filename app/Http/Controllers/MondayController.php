@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use GuzzleHttp\Client;
+use Illuminate\Http\Request;
 
 class MondayController extends Controller
 {
@@ -56,8 +56,9 @@ class MondayController extends Controller
     {
         $query = <<<'GRAPHQL'
         {
-            boards {
+            boards(limit:500) {
                 id
+                url
                 name
                 state
                 workspace_id
@@ -66,7 +67,8 @@ class MondayController extends Controller
         GRAPHQL;
 
         // Llamar al método query para realizar la petición GraphQL
-        return $this->query(new Request(['query' => $query]));
+        $response = $this->query(new Request(['query' => $query]));
+        return response()->json($response->original['data']['boards']);
     }
 
     /**
@@ -84,6 +86,29 @@ class MondayController extends Controller
                         id
                         text
                     }
+                }
+            }
+        }
+        GRAPHQL;
+
+        // Llamar al método query para realizar la petición GraphQL
+        return $this->query(new Request(['query' => $query]));
+    }
+
+    /**
+     * Método para duplicar un tablero en monday.com a taves de la api
+     *
+     */
+    public function duplicateBoard(Request $request)
+    {
+        $boardId = $request->input('boardId');
+        $boardName = $request->input('boardName');
+        $query = <<<GRAPHQL
+        mutation {
+            duplicate_board (board_id:$boardId, duplicate_type: duplicate_board_with_pulses_and_updates, board_name: $boardName ) {
+                board {
+                    id
+                    name
                 }
             }
         }

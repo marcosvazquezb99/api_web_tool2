@@ -26,6 +26,7 @@ class SendTimeTrackingReport extends Command
      */
     public function handle()
     {
+        // Obtener los argumentos del comando
         $days = $this->argument('days');
         $label = $this->argument('label');
         $channel = $this->argument('channel');

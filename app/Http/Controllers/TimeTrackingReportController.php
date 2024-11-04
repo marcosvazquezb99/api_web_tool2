@@ -182,7 +182,7 @@ class TimeTrackingReportController extends Controller
     /**
      * Obtener el nombre del usuario por ID desde Monday.com.
      */
-    public function getUserName($userId)
+    public function getUser($userId)
     {
         $query = <<<GRAPHQL
         {
@@ -206,7 +206,7 @@ class TimeTrackingReportController extends Controller
 
         $data = json_decode($response->getBody(), true);
 
-        return $data['data']['users'][0]['name'] ?? 'Desconocido';
+        return $data['data']['users'][0] ?? 'Desconocido';
     }
 
     /**
@@ -216,7 +216,7 @@ class TimeTrackingReportController extends Controller
      * @param string|null $toDate Fecha de fin en formato 'YYYY-MM-DD'. Si es null, se asume la fecha actual.
      * @return array Datos agrupados por usuario y tablero.
      */
-    public function processMondayData($fromDate, $toDate = null)
+    public function processMondayData($fromDate, $toDate = null, $excludedUsers = ['42646029', '54540552'])
     {
         // Si no se proporciona $toDate, se asume la fecha actual
         $toDate = $toDate ? Carbon::parse($toDate)->endOfDay() : Carbon::now()->endOfDay();
@@ -244,36 +244,36 @@ class TimeTrackingReportController extends Controller
 
                             if ($endTime !== false && $startTimeCarbon->between($fromDate, $toDate) && $endTimeCarbon->between($fromDate, $toDate)) {
                                 $manuallyEntered = !empty($record['manually_entered_start_date']) || !empty($record['manually_entered_end_time']) ? 'Sí' : 'No';
-
+                                $user = $this->getUser($record['started_user_id']);
                                 // Obtener nombres de usuario
-                                $startedUserName = $this->getUserName($record['started_user_id']);
-                                $endedUserName = $this->getUserName($record['ended_user_id']);
-
-                                // Solo procesar si es el mismo usuario quien inicia y termina
+                                $startedUserName = $user['name'];
+                                if (!in_array($user['email'], $excludedUsers)) {
+                                    // Solo procesar si es el mismo usuario quien inicia y termina
 //                                if ($record['started_user_id'] === $record['ended_user_id']) {
-                                $userId = $record['started_user_id'];
+                                    $userId = $record['started_user_id'];
 
-                                // Crear entrada para el usuario si no existe
-                                if (!isset($usersData[$userId])) {
-                                    $usersData[$userId] = [
-                                        'name' => $startedUserName,
-                                        'tableros' => []
+                                    // Crear entrada para el usuario si no existe
+                                    if (!isset($usersData[$userId])) {
+                                        $usersData[$userId] = [
+                                            'name' => $startedUserName,
+                                            'tableros' => []
+                                        ];
+                                    }
+
+                                    // Crear entrada para el tablero si no existe
+                                    if (!isset($usersData[$userId]['tableros'][$board['name']])) {
+                                        $usersData[$userId]['tableros'][$board['name']] = [];
+                                    }
+
+                                    // Calcular la duración
+                                    $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
+                                    $usersData[$userId]['tableros'][$board['name']][] = [
+                                        'tarea' => $item['name'],
+                                        'duracion' => number_format($duration, 2),
+                                        'manual' => $manuallyEntered
                                     ];
-                                }
-
-                                // Crear entrada para el tablero si no existe
-                                if (!isset($usersData[$userId]['tableros'][$board['name']])) {
-                                    $usersData[$userId]['tableros'][$board['name']] = [];
-                                }
-
-                                // Calcular la duración
-                                $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
-                                $usersData[$userId]['tableros'][$board['name']][] = [
-                                    'tarea' => $item['name'],
-                                    'duracion' => number_format($duration, 2),
-                                    'manual' => $manuallyEntered
-                                ];
 //                                }
+                                }
                             }
                         }
                     }
@@ -302,10 +302,10 @@ class TimeTrackingReportController extends Controller
         // Procesar los datos de Monday con el rango de fechas
         $usersData = $this->processMondayData($fromDate, $toDate);
         $report = '';
-
+        $globalTotalHours = 0;
         foreach ($usersData as $user) {
             $report .= "Usuario: *{$user['name']}*\n";
-            $globalHours = 0;
+            $totalUserHours = 0;
             foreach ($user['tableros'] as $tablero => $actividades) {
                 $totalHours = 0;
                 $report .= "  Tablero: *$tablero*";
@@ -327,12 +327,13 @@ class TimeTrackingReportController extends Controller
                 }
 
                 $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
-                $globalHours += $totalHours;
+                $totalUserHours += $totalHours;
             }
-
-            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $globalHours * 3600) . " horas\n";
+            $globalTotalHours += $totalUserHours;
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
             $report .= "*----------------------------------------*\n\n";
         }
+        $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
 
         return $report;
     }
