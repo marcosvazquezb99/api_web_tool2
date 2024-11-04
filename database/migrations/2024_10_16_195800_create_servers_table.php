@@ -8,7 +8,7 @@ class CreateServersTable extends Migration
 {
     public function up()
     {
-        Schema::cre('servers', function (Blueprint $table) {
+        Schema::create('servers', function (Blueprint $table) {
             $table->id('server_id');
             $table->string('name');
             $table->string('ip');
