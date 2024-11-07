@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
-use GuzzleHttp\Client;
-use function Symfony\Component\String\u;
 
 class SlackController extends Controller
 {
@@ -2524,6 +2523,14 @@ class SlackController extends Controller
         ]);
 
         return response()->json(json_decode($response->getBody(), true));
+    }
+
+
+    //Get summary of a board on monday and send it to slack
+    public function getMondayBoardSummary(Request $request)
+    {
+        $slackController = new SlackController();
+        $response = $slackController->chat_post_message('C07PF06HF46', json_encode($request->all()));
     }
 
 }
