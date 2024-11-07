@@ -2531,8 +2531,9 @@ class SlackController extends Controller
     {
         $slackController = new SlackController();
         $channel_id = $request->input('channel_id');
+        $channel_name = $request->input('channel_name');
 
-        $response = $slackController->chat_post_message('C07PF06HF46', $channel_id);
+        $response = $slackController->chat_post_message('C07PF06HF46', json_encode($request->all()));
     }
 
 }
