@@ -2530,7 +2530,9 @@ class SlackController extends Controller
     public function getMondayBoardSummary(Request $request)
     {
         $slackController = new SlackController();
-        $response = $slackController->chat_post_message('C07PF06HF46', json_encode($request->all()));
+        $channel_id = $request->input('channel_id');
+
+        $response = $slackController->chat_post_message('C07PF06HF46', $channel_id);
     }
 
 }
