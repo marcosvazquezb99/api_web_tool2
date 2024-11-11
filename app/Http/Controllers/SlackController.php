@@ -2527,13 +2527,24 @@ class SlackController extends Controller
 
 
     //Get summary of a board on monday and send it to slack
-    public function getMondayBoardSummary(Request $request)
+    public function getTimeTrackingMondayBoardSummary(Request $request)
     {
         $slackController = new SlackController();
+        $mondayController = new MondayController();
         $channel_id = $request->input('channel_id');
         $channel_name = $request->input('channel_name');
+        $board_name = $request->input('text');
 
-        $response = $slackController->chat_post_message('C07PF06HF46', json_encode($request->all()));
+        $slackController->chat_post_message($channel_id, "Getting summary for board: " . $board_name);
+        $board_id = $mondayController->findBoardIdByName($board_name)['id'];
+        if (!$board_id) {
+            $slackController->chat_post_message($channel_id, "Board not found: " . $board_name);
+            return response()->json(['message' => 'Board not found']);
+        }
+        $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board_id);
+        $report = $mondayController->generateTimeTrackingReport($mondaySummary);
+        $response = $slackController->chat_post_message('C07PF06HF46', $report);
+        return response()->json($response);
     }
 
 }

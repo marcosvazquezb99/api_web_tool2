@@ -9,6 +9,219 @@ class MondayController extends Controller
 {
     protected $client;
     protected $mondayToken;
+    protected $limit = 25;
+
+    protected $itemsData = [
+        'BoardRelationValue' => '... on BoardRelationValue {
+        display_value
+        linked_item_ids
+    }',
+        'ButtonValue' => '... on ButtonValue {
+        color
+        text
+    }',
+        'CheckboxValue' => '... on CheckboxValue {
+        checked
+    }',
+        'ColorPickerValue' => '... on ColorPickerValue {
+        color
+    }',
+        'CountryValue' => '... on CountryValue {
+        country {
+            code
+            name
+        }
+        value
+    }',
+        'CreationLogValue' => '... on CreationLogValue {
+        created_at
+        creator {
+            id
+            birthday
+            country_code
+            current_language
+            email
+            url
+            title
+            phone
+        }
+    }',
+        'DateValue' => '... on DateValue {
+        date
+        time
+        text
+    }',
+        'DependencyValue' => '... on DependencyValue {
+        display_value
+        text
+    }',
+        'DocValue' => '... on DocValue {
+        file {
+            doc {
+                id
+                url
+                relative_url
+                name
+            }
+            creator {
+                id
+                email
+            }
+            url
+        }
+    }',
+        'DropdownValue' => '... on DropdownValue {
+        text
+        values {
+            label
+        }
+    }',
+        'EmailValue' => '... on EmailValue {
+        email
+        text
+    }',
+        'FileValue' => '... on FileValue {
+        files {
+            __typename
+        }
+    }',
+        'FormulaValue' => '... on FormulaValue {
+        text
+        value
+    }',
+        'GroupValue' => '... on GroupValue {
+        group_id
+    }',
+        'HourValue' => '... on HourValue {
+        hour
+        minute
+    }',
+        'IntegrationValue' => '... on IntegrationValue {
+        text
+        entity_id
+        issue_api_url
+        issue_id
+    }',
+        'ItemIdValue' => '... on ItemIdValue {
+        item_id
+    }',
+        'LastUpdatedValue' => '... on LastUpdatedValue {
+        updated_at
+        updater {
+            name
+            id
+            email
+        }
+    }',
+        'LinkValue' => '... on LinkValue {
+        url
+        text
+    }',
+        'LocationValue' => '... on LocationValue {
+        lat
+        lng
+        address
+        city
+        city_short
+        country_short
+        place_id
+        street
+        street_number
+        street_number_short
+        street_short
+    }',
+        'LongTextValue' => '... on LongTextValue {
+        text
+    }',
+        'MirrorValue' => '... on MirrorValue {
+        display_value
+    }',
+        'NumbersValue' => '... on NumbersValue {
+        direction
+        symbol
+        number
+    }',
+        'PeopleValue' => '... on PeopleValue {
+        persons_and_teams {
+            id
+            kind
+        }
+    }',
+        'PersonValue' => '... on PersonValue {
+        person_id
+    }',
+        'PhoneValue' => '... on PhoneValue {
+        phone
+        country_short_name
+    }',
+        'ProgressValue' => '... on ProgressValue {
+        text
+    }',
+        'RatingValue' => '... on RatingValue {
+        rating
+    }',
+        'StatusValue' => '... on StatusValue {
+        label
+        is_done
+        index
+    }',
+        'SubtasksValue' => '... on SubtasksValue {
+        subitems_ids
+    }',
+        'TagsValue' => '... on TagsValue {
+        tag_ids
+        tags {
+            id
+            name
+        }
+    }',
+        'TeamValue' => '... on TeamValue {
+        team_id
+    }',
+        'TextValue' => '... on TextValue {
+        text
+    }',
+        'TimelineValue' => '... on TimelineValue {
+        from
+        to
+        text
+    }',
+        'TimeTrackingValue' => '... on TimeTrackingValue {
+        history {
+            started_user_id
+            ended_user_id
+            started_at
+            ended_at
+            manually_entered_end_date
+            manually_entered_end_time
+            manually_entered_start_date
+            manually_entered_start_time
+        }
+        running
+        started_at
+    }',
+        'UnsupportedValue' => '... on UnsupportedValue {
+        text
+    }',
+        'VoteValue' => '... on VoteValue {
+        voters {
+            id
+            name
+            email
+            url
+        }
+        vote_count
+    }',
+        'WeekValue' => '... on WeekValue {
+        start_date
+        end_date
+    }',
+        'WorldClockValue' => '... on WorldClockValue {
+        timezone
+        text
+    }'
+    ];
+
 
     public function __construct()
     {
@@ -52,11 +265,13 @@ class MondayController extends Controller
     /**
      * Método para obtener la información de los tableros (boards)
      */
-    public function getBoards()
+    public function getBoards($page = 1, $limit = null)
     {
-        $query = <<<'GRAPHQL'
+        $limit = $limit ?? $this->limit;
+
+        $query = <<<GRAPHQL
         {
-            boards(limit:500) {
+            boards(limit: $limit, page:$page) {
                 id
                 url
                 name
@@ -74,23 +289,41 @@ class MondayController extends Controller
     /**
      * Método para obtener los elementos (items) de un tablero específico
      */
-    public function getItemsByBoard($boardId)
+    public function getItemsByBoard($boardId, $columns = null, $cursor = null, $limit = null)
     {
+        $columnsData = '';
+        if ($columns) {
+            $columns = explode(',', $columns);
+        } else {
+            $columns = array_keys($this->itemsData);
+        }
+        foreach ($columns as $column) {
+            $columnsData .= $this->itemsData[$column];
+        }
+        $limit = $limit ?? $this->limit;
+        if ($cursor === null) {
+            $cursor = 'null';
+        } else {
+            $cursor = '"' . $cursor . '"';
+        }
         $query = <<<GRAPHQL
         {
-            boards (ids: $boardId) {
-                items {
-                    id
-                    name
-                    column_values {
+            boards(limit: 1, ids: ["$boardId"]) {
+                name
+                items_page(limit: $limit, cursor: $cursor) {
+                    items {
                         id
-                        text
+                        name
+                        updated_at
+                        column_values {
+                            $columnsData
+                        }
                     }
+                    cursor # Cursor para paginar los items
                 }
             }
         }
         GRAPHQL;
-
         // Llamar al método query para realizar la petición GraphQL
         return $this->query(new Request(['query' => $query]));
     }
@@ -116,5 +349,183 @@ class MondayController extends Controller
 
         // Llamar al método query para realizar la petición GraphQL
         return $this->query(new Request(['query' => $query]));
+    }
+
+    public function getUser($userId)
+    {
+        $response = $this->getUserRequest($userId);
+        return $response->original['data']['users'][0];
+    }
+
+    public function getUserRequest($userId)
+    {
+        $query = <<<GRAPHQL
+        {
+            users(ids: [$userId]) {
+                id
+                name
+                email
+            }
+        }
+        GRAPHQL;
+
+        // Llamar al método query para realizar la petición GraphQL
+        return $this->query(new Request(['query' => $query]));
+    }
+
+    public function findBoardIdByName($boardName)
+    {
+        $page = 1;
+        $foundBoard = null;
+
+        do {
+            $boards = $this->getBoards($page)->original;
+
+//            $response = $this->query(new Request(["query" => $query]));
+//            dd($boards->original);
+
+
+            if (count($boards) > 0) {
+                foreach ($boards as $board) {
+                    if ($board['name'] === $boardName) {
+                        $foundBoard = $board;
+                        break;
+                    }
+                }
+
+                if ($foundBoard) {
+                    break;
+                }
+
+                $page++;
+            } else {
+                break;
+            }
+        } while ($page);
+        return $foundBoard;
+    }
+
+
+    //method to get id of board by name
+    public function getFindBoardIdByName($boardName)
+    {
+
+        $foundBoard = $this->findBoardIdByName($boardName);
+        if ($foundBoard) {
+            return response()->json(['board_id' => $foundBoard['id']]);
+        } else {
+            return response()->json(['message' => 'Board not found'], 404);
+        }
+    }
+
+    public function getTimeTrakingMondayBoardSummary($boardId)
+    {
+
+        $columns = 'TimeTrackingValue,PeopleValue';
+        $cursor = null;
+        $usersData = [];
+        do {
+            $boardResponse = $this->getItemsByBoard($boardId, $columns, $cursor);
+
+            if ($boardResponse->status() !== 200) {
+                return response()->json(['error' => 'Error al obtener los items del tablero'], 500);
+            }
+            $board = $boardResponse->original;
+            $items = $board['data']['boards'][0]['items_page']['items'];
+            $cursor = $board['data']['boards'][0]['items_page']['cursor'];
+            if ($cursor === 'null') {
+                $cursor = null;
+            }
+            $board_name = $board['data']['boards'][0]['name'];
+            foreach ($items as $item) {
+                foreach ($item['column_values'] as $column) {
+                    if (!empty($column['history'])) {
+                        foreach ($column['history'] as $record) {
+
+                            $startTime = $record['started_at'] ?? $record['manually_entered_start_date'];
+                            $endTime = $record['ended_at'] ?? $record['manually_entered_end_date'];
+
+
+                            $manuallyEntered = !empty($record['manually_entered_start_date']) || !empty($record['manually_entered_end_time']) ? 'Sí' : 'No';
+                            $user = $this->getUser($record['started_user_id']);
+                            // Obtener nombres de usuario
+                            $startedUserName = $user['name'];
+
+                            if ($user['email']) {
+                                $userId = $record['started_user_id'];
+
+                                // Crear entrada para el usuario si no existe
+                                if (!isset($usersData[$userId])) {
+                                    $usersData[$userId] = [
+                                        'name' => $startedUserName,
+                                        'tableros' => []
+                                    ];
+                                }
+
+
+                                // Calcular la duración
+                                $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
+                                if (!isset($usersData[$userId]['tableros'][$board_name][$item['name']])) {
+                                    $usersData[$userId]['tableros'][$board_name][$item['name']] = [
+                                        'tarea' => $item['name'],
+                                        'duracion' => (float)number_format($duration, 2),
+                                        'manual' => $manuallyEntered
+                                    ];
+                                } else {
+                                    $usersData[$userId]['tableros'][$board_name][$item['name']]['duracion'] += (float)number_format($duration, 2);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        } while ($cursor !== null);
+        //RETURN USERSDATA VARIABLE IN JSON FORMAT
+        return $usersData;
+    }
+
+    /**
+     * Generar el reporte de horas trabajadas basado en un rango de fechas.
+     *
+     * @param string $fromDate Fecha de inicio en formato 'YYYY-MM-DD'.
+     * @param string|null $toDate Fecha de fin en formato 'YYYY-MM-DD'.
+     * Si solo se proporciona uno, o ambos son iguales, se calculará para solo ese día.
+     */
+    public function generateTimeTrackingReport($usersData)
+    {
+        $report = '';
+        $globalTotalHours = 0;
+        foreach ($usersData as $user) {
+            $report .= "Usuario: *{$user['name']}*\n";
+            $totalUserHours = 0;
+            foreach ($user['tableros'] as $tablero => $actividades) {
+                $totalHours = 0;
+                $report .= "  Tablero: *$tablero*";
+
+                $report .= ":\n";
+                foreach ($actividades as $actividad) {
+//                    dd($actividad);
+                    try {
+                        $report .= "    Actividad: *{$actividad['tarea']}* - ";
+                        $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
+                        $report .= "Manual: {$actividad['manual']}\n";
+                        $totalHours += $actividad['duracion'];
+                    } catch (\Exception $e) {
+                        error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
+                    }
+
+                }
+
+                $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
+                $totalUserHours += $totalHours;
+            }
+            $globalTotalHours += $totalUserHours;
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
+            $report .= "*----------------------------------------*\n\n";
+        }
+        $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
+
+        return $report;
     }
 }

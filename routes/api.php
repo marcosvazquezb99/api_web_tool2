@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 Route::post('newform', [FormsController::class, 'formCreation']);
-Route::post('slack/summary_proyect', [SlackController::class, 'getMondayBoardSummary']);
+Route::post('slack/summary_proyect', [SlackController::class, 'getTimeTrackingMondayBoardSummary']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
 Route::middleware('auth:sanctum')->get('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/migrate-wordpress', [WordPressMigrationController::class, 'migrate']);
@@ -54,11 +54,12 @@ Route::prefix('monday')->middleware('auth:sanctum')->group(function () {
 
 // Ruta para obtener los tableros (boards)
     Route::get('boards', [MondayController::class, 'getBoards']);
-
     Route::post('duplicateBoard', [MondayController::class, 'duplicateBoard']);
 
 // Ruta para obtener los elementos de un tablero específico
     Route::get('boards/{boardId}/items', [MondayController::class, 'getItemsByBoard']);
+    Route::get('boards/by_name/{boardName}', [MondayController::class, 'getFindBoardIdByName']);
+
 });
 
 // Ruta para revocar un token específico
