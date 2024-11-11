@@ -29,9 +29,10 @@ class TimeTrackingReportController extends Controller
             // Construimos la consulta GraphQL para los tableros, con paginación usando 'page'
             $query = <<<GRAPHQL
         {
-            boards(limit: 250, page: $page) {
+            boards(limit: 50, page: $page) {
+                id
                 name
-                items_page(limit: 500) {
+                items_page(limit: 50) {
                     items {
                         id
                         name
@@ -64,23 +65,29 @@ class TimeTrackingReportController extends Controller
             }
         }
         GRAPHQL;
+//            dd($query);
 
-            // Hacemos la solicitud a la API de Monday
-            $response = $this->client->post('https://api.monday.com/v2', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->mondayToken,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'query' => $query,
-                ],
-            ]);
+            try {
+                // Hacemos la solicitud a la API de Monday
+                $response = $this->client->post('https://api.monday.com/v2', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $this->mondayToken,
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => [
+                        'query' => $query,
+                    ],
+                ]);
+            } catch (\Exception $e) {
+                error_log('Error al obtener los boards de la API de Monday: ' . $e->getMessage());
+                return [];
+            }
 
             $data = json_decode($response->getBody(), true);
             $boards = $data['data']['boards'];
 
             // Si recibimos menos de 250 boards, significa que no hay más boards
-            if (count($boards) < 250) {
+            if (count($boards) < 50) {
                 $hasMoreBoards = false;
             }
 
@@ -88,10 +95,10 @@ class TimeTrackingReportController extends Controller
             foreach ($boards as $board) {
                 $boardItems = [];
                 $itemsCursor = null;
-
+                $boardId = $board['id'];
                 // Mientras haya items para paginar dentro del tablero, seguimos obteniéndolos
+                $itemsPage = $board['items_page'];
                 do {
-                    $itemsPage = $board['items_page'];
 
                     // Agregamos los items de esta página
                     $boardItems = array_merge($boardItems, $itemsPage['items']);
@@ -103,9 +110,10 @@ class TimeTrackingReportController extends Controller
                     if ($itemsCursor) {
                         $queryItemsCursor = <<<GRAPHQL
                     {
-                        boards(limit: 1, page: $page) {
+                        boards(ids:"$boardId", limit: 1) {
+                            id
                             name
-                            items_page(limit: 500, cursor: "{$itemsCursor}") {
+                            items_page(limit: 500, cursor: "$itemsCursor") {
                                 items {
                                     id
                                     name
@@ -138,7 +146,7 @@ class TimeTrackingReportController extends Controller
                         }
                     }
                     GRAPHQL;
-
+//dd($queryItemsCursor);
                         $itemsResponse = $this->client->post('https://api.monday.com/v2', [
                             'headers' => [
                                 'Authorization' => 'Bearer ' . $this->mondayToken,
@@ -150,6 +158,8 @@ class TimeTrackingReportController extends Controller
                         ]);
 
                         $itemsData = json_decode($itemsResponse->getBody(), true);
+
+//                        dd($itemsData);
                         $itemsPage = $itemsData['data']['boards'][0]['items_page'];
                     }
 
@@ -247,7 +257,7 @@ class TimeTrackingReportController extends Controller
                                 $user = $this->getUser($record['started_user_id']);
                                 // Obtener nombres de usuario
                                 $startedUserName = $user['name'];
-                                if (!in_array($user['email'], $excludedUsers)) {
+                                if (!in_array($user['id'], $excludedUsers)) {
                                     // Solo procesar si es el mismo usuario quien inicia y termina
 //                                if ($record['started_user_id'] === $record['ended_user_id']) {
                                     $userId = $record['started_user_id'];
