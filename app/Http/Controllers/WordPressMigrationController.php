@@ -41,7 +41,7 @@ class WordPressMigrationController extends Controller
             // Extraer credenciales de base de datos del archivo wp-config.php encontrado
 
             $sourceDbConfig = $this->extractDbConfig($sourceWpConfigPath, 'source');
-
+            $this->setWordpressDatabases('source', $sourceDbConfig['DB_HOST'], $sourceDbConfig['DB_USER'], $sourceDbConfig['DB_PASSWORD'], $sourceDbConfig['DB_NAME'], $sourceDbConfig['DB_PORT']);
             // Modificar host si es 'localhost'
             if ($sourceDbConfig['DB_HOST'] === 'localhost') {
                 $sourceDbConfig['DB_HOST'] = $sourceDisk['domain']; // IP o dominio del servidor de origen
@@ -60,7 +60,7 @@ class WordPressMigrationController extends Controller
 
             // Extraer credenciales del archivo wp-config.php en el servidor de destino
             $destinationDbConfig = $this->extractDbConfig($destinationWpConfigPath, 'destination');
-
+            $this->setWordpressDatabases('destination', $destinationDbConfig['DB_HOST'], $destinationDbConfig['DB_USER'], $destinationDbConfig['DB_PASSWORD'], $destinationDbConfig['DB_NAME'], $destinationDbConfig['DB_PORT']);
             // Importar la base de datos en el servidor de destino
             $this->importDatabase($destinationDbConfig, $sqlFile);
 
@@ -112,11 +112,18 @@ class WordPressMigrationController extends Controller
 
     protected function exportDatabase($dbConfig, $sqlFile)
     {
-        $dumpCommand = "C:\\xampp_8.2.12222\mysql\bin\mysqldump -h {$dbConfig['DB_HOST']} -P {$dbConfig['DB_PORT']} -u {$dbConfig['DB_USER']} -p{$dbConfig['DB_PASSWORD']} {$dbConfig['DB_NAME']} > $sqlFile";
+        $dumpCommand = env('MYSQLDUMP_PATH') . "mysqldump --protocol=TCP   -h {$dbConfig['DB_HOST']} -P {$dbConfig['DB_PORT']} -u {$dbConfig['DB_USER']} -p{$dbConfig['DB_PASSWORD']} {$dbConfig['DB_NAME']} > $sqlFile";
         $process = Process::fromShellCommandline($dumpCommand);
         $process->run();
+        //check if there are a file on the path $sqlFile which is the path of the file to be created
+        if (!file_exists($sqlFile)) {
+            throw new \Exception('Database export failed: ' . $process->getErrorOutput());
+        }
 
-        if (!$process->isSuccessful()) {
+        dd($process->getErrorOutput());
+
+
+        if (!$process->getStatus()) {
             throw new \Exception('Database export failed: ' . $process->getErrorOutput());
         }
         dd($dumpCommand);
@@ -164,6 +171,17 @@ class WordPressMigrationController extends Controller
             "filesystems.disks.ftp_$destination.password" => $password,
             "filesystems.disks.ftp_$destination.root" => $root,
             "filesystems.disks.ftp_$destination.port" => $port,
+        ]);
+    }
+
+    public function setWordpressDatabases($destination, $host, $username, $password, $dbName, $port = 3306)
+    {
+        config([
+            "database.connections.wordpress_$destination.database" => $dbName,
+            "database.connections.wordpress_$destination.host" => $host,
+            "database.connections.wordpress_$destination.username" => $username,
+            "database.connections.wordpress_$destination.password" => $password,
+            "database.connections.wordpress_$destination.port" => $port,
         ]);
     }
 }

@@ -42,7 +42,7 @@ Route::prefix('slack')->middleware('auth:sanctum')->group(function () {
     Route::post('admin/users/set-owner', [SlackController::class, 'admin_users_set_owner']);
     Route::post('admin/conversations/create', [SlackController::class, 'admin_conversations_create']);
     Route::get('conversations/info', [SlackController::class, 'conversations_info']);
-    Route::get('conversations/list', [SlackController::class, 'conversations_list']);
+    Route::get('conversations/list', [SlackController::class, 'get_conversations_list']);
     Route::get('users/list', [SlackController::class, 'users_list']);
     // Añade aquí el resto de las rutas para las funciones generadas
 });
@@ -82,4 +82,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('triggered-actions', TriggeredActionController::class);
     Route::apiResource('websites', WebsiteController::class);
     Route::apiResource('servers', ServerController::class);
+    Route::apiResource('wp-migrations', \App\Http\Controllers\WpMigrationController::class);
 });

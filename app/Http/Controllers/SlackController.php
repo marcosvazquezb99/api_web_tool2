@@ -11,6 +11,7 @@ class SlackController extends Controller
     protected $client;
     protected $slackToken;
     protected $url = 'https://slack.com/api/';
+
     public function __construct()
     {
         $this->client = new Client();
@@ -67,7 +68,7 @@ class SlackController extends Controller
     public function admin_apps_approved_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.apps.approved.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -79,7 +80,7 @@ class SlackController extends Controller
     public function admin_apps_requests_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.apps.requests.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -91,7 +92,7 @@ class SlackController extends Controller
     public function admin_apps_restricted_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.apps.restricted.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -194,7 +195,7 @@ class SlackController extends Controller
     public function admin_conversations_ekm_list_original_connected_channel_info(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.conversations.ekm.listOriginalConnectedChannelInfo', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -260,7 +261,7 @@ class SlackController extends Controller
     public function admin_conversations_restrict_access_remove_group(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.conversations.restrictAccess.removeGroup', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -277,7 +278,7 @@ class SlackController extends Controller
     public function admin_conversations_restrict_access_list_groups(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.conversations.restrictAccess.listGroups', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -289,7 +290,7 @@ class SlackController extends Controller
     public function admin_conversations_restrict_access_add_group(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.conversations.restrictAccess.addGroup', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -350,7 +351,7 @@ class SlackController extends Controller
     public function admin_emoji_add(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.emoji.add', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -366,7 +367,7 @@ class SlackController extends Controller
     public function admin_emoji_add_alias(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.emoji.addAlias', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -382,7 +383,7 @@ class SlackController extends Controller
     public function admin_emoji_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.emoji.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -408,7 +409,7 @@ class SlackController extends Controller
     public function admin_emoji_rename(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.emoji.rename', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -424,7 +425,7 @@ class SlackController extends Controller
     public function admin_emoji_remove(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.emoji.remove', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -505,7 +506,7 @@ class SlackController extends Controller
     public function admin_teams_admins_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.teams.admins.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -546,7 +547,7 @@ class SlackController extends Controller
     public function admin_teams_owners_list(Request $request)
     {
         $response = $this->client->get($this->url . '/admin.teams.owners.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -600,7 +601,7 @@ class SlackController extends Controller
     public function admin_teams_settings_set_icon(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.teams.settings.setIcon', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -631,7 +632,7 @@ class SlackController extends Controller
     public function admin_teams_settings_set_default_channels(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.teams.settings.setDefaultChannels', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -834,7 +835,7 @@ class SlackController extends Controller
     public function api_test(Request $request)
     {
         $response = $this->client->get($this->url . '/api.test', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -846,7 +847,7 @@ class SlackController extends Controller
     public function apps_permissions_info(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -870,7 +871,7 @@ class SlackController extends Controller
     public function apps_permissions_request(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.request', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -882,7 +883,7 @@ class SlackController extends Controller
     public function apps_permissions_resources_list(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.resources.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -894,7 +895,7 @@ class SlackController extends Controller
     public function apps_permissions_scopes_list(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.scopes.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -906,7 +907,7 @@ class SlackController extends Controller
     public function apps_uninstall(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.uninstall', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -918,7 +919,7 @@ class SlackController extends Controller
     public function apps_permissions_users_list(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.users.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -930,7 +931,7 @@ class SlackController extends Controller
     public function apps_permissions_users_request(Request $request)
     {
         $response = $this->client->get($this->url . '/apps.permissions.users.request', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -942,7 +943,7 @@ class SlackController extends Controller
     public function bots_info(Request $request)
     {
         $response = $this->client->get($this->url . '/bots.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -954,7 +955,7 @@ class SlackController extends Controller
     public function auth_revoke(Request $request)
     {
         $response = $this->client->get($this->url . '/auth.revoke', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1105,7 +1106,7 @@ class SlackController extends Controller
     public function chat_get_permalink(Request $request)
     {
         $response = $this->client->get($this->url . '/chat.getPermalink', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1166,6 +1167,7 @@ class SlackController extends Controller
 
         return response()->json(json_decode($response->getBody(), true));
     }
+
     public function chat_post_message(string $channel, string $message)
     {
         $response = $this->client->post($this->url . '/chat.postMessage', [
@@ -1291,7 +1293,7 @@ class SlackController extends Controller
      */
     public function conversations_info(Request $request)
     {
-        $response = $this->client->get($this->url.'/conversations.info', [
+        $response = $this->client->get($this->url . '/conversations.info', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
@@ -1376,7 +1378,7 @@ class SlackController extends Controller
     public function conversations_history(Request $request)
     {
         $response = $this->client->get($this->url . '/conversations.history', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1430,13 +1432,25 @@ class SlackController extends Controller
         return response()->json(json_decode($response->getBody(), true));
     }
 
-    public function conversations_list(Request $request)
+    public function get_conversations_list(Request $request)
     {
-        $response = $this->client->get($this->url.'/conversations.list', [
+        $response = $this->client->get($this->url . '/conversations.list', [
             'headers' => [
-                'Authorization' => 'Bearer '.$this->slackToken
+                'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
+        ]);
+
+        return response()->json(json_decode($response->getBody(), true));
+    }
+
+    public function conversations_list($params)
+    {
+        $response = $this->client->get($this->url . '/conversations.list', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->slackToken
+            ],
+            'query' => $params // Handle query parameters here
         ]);
 
         return response()->json(json_decode($response->getBody(), true));
@@ -1501,7 +1515,7 @@ class SlackController extends Controller
     public function conversations_members(Request $request)
     {
         $response = $this->client->get($this->url . '/conversations.members', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1528,7 +1542,7 @@ class SlackController extends Controller
     public function conversations_replies(Request $request)
     {
         $response = $this->client->get($this->url . '/conversations.replies', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1583,7 +1597,7 @@ class SlackController extends Controller
     public function dnd_info(Request $request)
     {
         $response = $this->client->get($this->url . '/dnd.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1595,7 +1609,7 @@ class SlackController extends Controller
     public function dnd_set_snooze(Request $request)
     {
         $response = $this->client->post($this->url . '/dnd.setSnooze', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -1610,7 +1624,7 @@ class SlackController extends Controller
     public function dnd_team_info(Request $request)
     {
         $response = $this->client->get($this->url . '/dnd.teamInfo', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1622,7 +1636,7 @@ class SlackController extends Controller
     public function emoji_list(Request $request)
     {
         $response = $this->client->get($this->url . '/emoji.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1663,7 +1677,7 @@ class SlackController extends Controller
     public function files_list(Request $request)
     {
         $response = $this->client->get($this->url . '/files.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1675,7 +1689,7 @@ class SlackController extends Controller
     public function files_remote_update(Request $request)
     {
         $response = $this->client->post($this->url . '/files.remote.update', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -1696,7 +1710,7 @@ class SlackController extends Controller
     public function files_info(Request $request)
     {
         $response = $this->client->get($this->url . '/files.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1708,7 +1722,7 @@ class SlackController extends Controller
     public function files_upload(Request $request)
     {
         $response = $this->client->post($this->url . '/files.upload', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -1730,7 +1744,7 @@ class SlackController extends Controller
     public function files_remote_add(Request $request)
     {
         $response = $this->client->post($this->url . '/files.remote.add', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -1750,7 +1764,7 @@ class SlackController extends Controller
     public function files_remote_info(Request $request)
     {
         $response = $this->client->get($this->url . '/files.remote.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1762,7 +1776,7 @@ class SlackController extends Controller
     public function migration_exchange(Request $request)
     {
         $response = $this->client->get($this->url . '/migration.exchange', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1774,7 +1788,7 @@ class SlackController extends Controller
     public function files_remote_list(Request $request)
     {
         $response = $this->client->get($this->url . '/files.remote.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1786,7 +1800,7 @@ class SlackController extends Controller
     public function files_remote_remove(Request $request)
     {
         $response = $this->client->post($this->url . '/files.remote.remove', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -1802,7 +1816,7 @@ class SlackController extends Controller
     public function files_remote_share(Request $request)
     {
         $response = $this->client->get($this->url . '/files.remote.share', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1842,7 +1856,7 @@ class SlackController extends Controller
     public function pins_list(Request $request)
     {
         $response = $this->client->get($this->url . '/pins.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1854,7 +1868,7 @@ class SlackController extends Controller
     public function reactions_list(Request $request)
     {
         $response = $this->client->get($this->url . '/reactions.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1866,7 +1880,7 @@ class SlackController extends Controller
     public function oauth_token(Request $request)
     {
         $response = $this->client->get($this->url . '/oauth.token', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1912,7 +1926,7 @@ class SlackController extends Controller
     public function oauth_v2_access(Request $request)
     {
         $response = $this->client->get($this->url . '/oauth.v2.access', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1939,7 +1953,7 @@ class SlackController extends Controller
     public function oauth_access(Request $request)
     {
         $response = $this->client->get($this->url . '/oauth.access', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -1951,7 +1965,7 @@ class SlackController extends Controller
     public function reactions_get(Request $request)
     {
         $response = $this->client->get($this->url . '/reactions.get', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2022,7 +2036,7 @@ class SlackController extends Controller
     public function reminders_info(Request $request)
     {
         $response = $this->client->get($this->url . '/reminders.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2034,7 +2048,7 @@ class SlackController extends Controller
     public function reminders_list(Request $request)
     {
         $response = $this->client->get($this->url . '/reminders.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2046,7 +2060,7 @@ class SlackController extends Controller
     public function rtm_connect(Request $request)
     {
         $response = $this->client->get($this->url . '/rtm.connect', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2058,7 +2072,7 @@ class SlackController extends Controller
     public function search_messages(Request $request)
     {
         $response = $this->client->get($this->url . '/search.messages', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2087,7 +2101,7 @@ class SlackController extends Controller
     public function stars_list(Request $request)
     {
         $response = $this->client->get($this->url . '/stars.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2116,7 +2130,7 @@ class SlackController extends Controller
     public function team_access_logs(Request $request)
     {
         $response = $this->client->get($this->url . '/team.accessLogs', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2128,7 +2142,7 @@ class SlackController extends Controller
     public function team_billable_info(Request $request)
     {
         $response = $this->client->get($this->url . '/team.billableInfo', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2140,7 +2154,7 @@ class SlackController extends Controller
     public function team_info(Request $request)
     {
         $response = $this->client->get($this->url . '/team.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2167,7 +2181,7 @@ class SlackController extends Controller
     public function team_integration_logs(Request $request)
     {
         $response = $this->client->get($this->url . '/team.integrationLogs', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2179,7 +2193,7 @@ class SlackController extends Controller
     public function team_profile_get(Request $request)
     {
         $response = $this->client->get($this->url . '/team.profile.get', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2224,7 +2238,7 @@ class SlackController extends Controller
     public function usergroups_list(Request $request)
     {
         $response = $this->client->get($this->url . '/usergroups.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2236,7 +2250,7 @@ class SlackController extends Controller
     public function usergroups_users_list(Request $request)
     {
         $response = $this->client->get($this->url . '/usergroups.users.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2283,7 +2297,7 @@ class SlackController extends Controller
     public function users_delete_photo(Request $request)
     {
         $response = $this->client->post($this->url . '/users.deletePhoto', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -2297,7 +2311,7 @@ class SlackController extends Controller
     public function users_get_presence(Request $request)
     {
         $response = $this->client->get($this->url . '/users.getPresence', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2309,7 +2323,7 @@ class SlackController extends Controller
     public function users_conversations(Request $request)
     {
         $response = $this->client->get($this->url . '/users.conversations', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2321,7 +2335,7 @@ class SlackController extends Controller
     public function users_info(Request $request)
     {
         $response = $this->client->get($this->url . '/users.info', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2345,7 +2359,7 @@ class SlackController extends Controller
     public function users_identity(Request $request)
     {
         $response = $this->client->get($this->url . '/users.identity', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2357,7 +2371,7 @@ class SlackController extends Controller
     public function users_list(Request $request)
     {
         $response = $this->client->get($this->url . '/users.list', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2369,7 +2383,7 @@ class SlackController extends Controller
     public function users_lookup_by_email(Request $request)
     {
         $response = $this->client->get($this->url . '/users.lookupByEmail', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2398,7 +2412,7 @@ class SlackController extends Controller
     public function users_profile_get(Request $request)
     {
         $response = $this->client->get($this->url . '/users.profile.get', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'query' => $request->all() // Handle query parameters here
@@ -2424,7 +2438,7 @@ class SlackController extends Controller
     public function users_set_photo(Request $request)
     {
         $response = $this->client->post($this->url . '/users.setPhoto', [
-           'headers' => [
+            'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
             'form_params' => [
@@ -2525,6 +2539,26 @@ class SlackController extends Controller
         return response()->json(json_decode($response->getBody(), true));
     }
 
+    /**
+     * Find channel id by client id
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function findChannelIdByClientId($client_id)
+    {
+
+        $allChannels = $this->conversations_list('exclude_archived=true&types=private_channel')->getData();
+        $channel_id = null;
+        foreach ($allChannels->channels as $channel) {
+
+            if (explode('_', $channel->name)[0] == $client_id) {
+                $channel_id = $channel->id;
+                break;
+            }
+        }
+        return $channel_id;
+    }
+
 
     //Get summary of a board on monday and send it to slack
     public function getTimeTrackingMondayBoardSummary(Request $request)
@@ -2545,6 +2579,51 @@ class SlackController extends Controller
         $report = $mondayController->generateTimeTrackingReport($mondaySummary);
         $response = $slackController->chat_post_message('C07PF06HF46', $report);
         return response()->json($response);
+    }
+
+
+    //Get summary of a board on monday and send it to slack
+    public function timeTrackingMondayBoardSummaryWithBoardIds($board_ids, $channel_id = null): bool
+    {
+        $slackController = new SlackController();
+        $mondayController = new MondayController();
+        $boards = $mondayController->getBoardsByIds($board_ids)->getData();
+        $client_ids = [];
+
+        foreach ($boards as $board) {
+            $board_name = $board->name;
+            // regexp to get client id from board name
+            preg_match('/(Subelementos de )?(\d*)_.*/', $board_name, $matches);
+//            $client_id = explode('_', $board_name)[0];
+//            $client_id = explode('Subelementos de ', $board_name);
+
+            $client_ids[] = $matches[2] ?? $board_name;
+
+        }
+
+        if (count($client_ids) > 0) {
+            foreach ($client_ids as $client_id) {
+                $channel_id = $this->findChannelIdByClientId($client_id);
+
+                if ($channel_id) {
+                    $slackController->chat_post_message($channel_id, "Getting summary for board: " . $board_name);
+                    $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board->id);
+                    $report = $mondayController->generateTimeTrackingReport($mondaySummary);
+                    $slackController->chat_post_message($channel_id, $report);
+                }
+            }
+        }
+        return true;
+
+
+        /*if (!$board_id) {
+            $slackController->chat_post_message($channel_id, "Board not found: " . $board_name);
+            return response()->json(['message' => 'Board not found']);
+        }
+        $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board_id);
+        $report = $mondayController->generateTimeTrackingReport($mondaySummary);
+        $response = $slackController->chat_post_message('C07PF06HF46', $report);
+        return response()->json($response);*/
     }
 
 }

@@ -16,10 +16,13 @@ class TimeTrackingReportController extends Controller
         $this->mondayToken = env('MONDAY_API_TOKEN'); // Añade tu token en el archivo .env
     }
 
+    //obtener los boards que tuvieron cambios en el rango de fechas
+
+
     /**
      * Obtener los datos de Monday.com mediante GraphQL con paginación.
      */
-    public function getMondayData()
+    public function getMondayData($boardsIds = [])
     {
         $allBoards = []; // Para almacenar todos los tableros
         $page = 1; // Comenzamos en la primera página
@@ -162,7 +165,6 @@ class TimeTrackingReportController extends Controller
 //                        dd($itemsData);
                         $itemsPage = $itemsData['data']['boards'][0]['items_page'];
                     }
-
                 } while ($itemsCursor); // Repetir mientras haya más items (cursor) para este tablero
 
                 // Añadir los items del tablero actual
@@ -226,7 +228,7 @@ class TimeTrackingReportController extends Controller
      * @param string|null $toDate Fecha de fin en formato 'YYYY-MM-DD'. Si es null, se asume la fecha actual.
      * @return array Datos agrupados por usuario y tablero.
      */
-    public function processMondayData($fromDate, $toDate = null, $excludedUsers = ['42646029', '54540552'])
+    public function processMondayData(string $fromDate, string $toDate = null, $boardsIds = [], $excludedUsers = ['42646029', '54540552'])
     {
         // Si no se proporciona $toDate, se asume la fecha actual
         $toDate = $toDate ? Carbon::parse($toDate)->endOfDay() : Carbon::now()->endOfDay();
@@ -278,6 +280,7 @@ class TimeTrackingReportController extends Controller
                                     // Calcular la duración
                                     $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
                                     $usersData[$userId]['tableros'][$board['name']][] = [
+                                        'boardId' => $board['id'],
                                         'tarea' => $item['name'],
                                         'duracion' => number_format($duration, 2),
                                         'manual' => $manuallyEntered
@@ -304,13 +307,35 @@ class TimeTrackingReportController extends Controller
      */
     public function generateReport(string $fromDate, $type, string $toDate = null)
     {
+        $slackController = new SlackController();
         // Si no se proporciona $toDate o si ambos son iguales, procesar solo para $fromDate
         if (is_null($toDate) || $fromDate === $toDate) {
             $toDate = $fromDate; // Si no hay toDate, tratamos ambos como el mismo día
+        } elseif (is_null($toDate) && is_null($fromDate)) {
+            $toDate = $fromDate; // Si toDate es null, tratamos ambos como el mismo día
         }
 
         // Procesar los datos de Monday con el rango de fechas
         $usersData = $this->processMondayData($fromDate, $toDate);
+        //get all boards ids
+        $boardsIds = [];
+        foreach ($usersData as $user) {
+            foreach ($user['tableros'] as $tablero => $actividades) {
+                foreach ($actividades as $actividad) {
+                    $boardsIds[] = $actividad['boardId'];
+                }
+            }
+        }
+        if (!$slackController->timeTrackingMondayBoardSummaryWithBoardIds($boardsIds)) {
+            return 'No se encontraron datos en el rango de fechas seleccionado';
+        }
+
+        return $this->toReport($usersData, $type);
+    }
+
+
+    public function toReport($usersData, $type)
+    {
         $report = '';
         $globalTotalHours = 0;
         foreach ($usersData as $user) {
@@ -329,6 +354,7 @@ class TimeTrackingReportController extends Controller
                             $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
                             $report .= "Manual: {$actividad['manual']}\n";
                         }
+                        $selectedBoards[] = $actividad['boardId'];
                         $totalHours += $actividad['duracion'];
                     } catch (\Exception $e) {
                         error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
@@ -348,18 +374,4 @@ class TimeTrackingReportController extends Controller
         return $report;
     }
 
-    /**
-     * Enviar el reporte diario por correo electrónico.
-     */
-    public function sendDailyEmailReport()
-    {
-        $emailAddress = 'jose@somospecesvoladores.com';
-        $subject = 'Reporte diario de tiempos del equipo';
-//        $message = $this->generateReport();
-//dd($message);
-        // Enviar correo usando la función Mail de Laravel
-//        SlackController::class->chat_post_message('C07PF06HF46', $message);
-
-//        return response()->json(['message' => 'Reporte enviado exitosamente']);
-    }
 }

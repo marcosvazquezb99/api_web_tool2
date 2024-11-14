@@ -306,6 +306,7 @@ class MondayController extends Controller
         } else {
             $cursor = '"' . $cursor . '"';
         }
+
         $query = <<<GRAPHQL
         {
             boards(limit: 1, ids: ["$boardId"]) {
@@ -373,6 +374,60 @@ class MondayController extends Controller
         return $this->query(new Request(['query' => $query]));
     }
 
+    /**
+     * Método para obtener la información de los tableros (boards)
+     */
+    public function findBoardIdByClientId($clientId)
+    {
+        $page = 1;
+        $foundBoard = null;
+
+        do {
+            $boards = $this->getBoards($page)->original;
+
+//            $response = $this->query(new Request(["query" => $query]));
+//            dd($boards->original);
+
+
+            if (count($boards) > 0) {
+                foreach ($boards as $board) {
+                    //split board name with _
+                    $mondayClientId = explode('_', $board['name']);
+
+                    //check if the first part of the board name is equal to the client id
+                    if ($mondayClientId[0] === $clientId) {
+                        $foundBoard = $board;
+                        break;
+                    }
+                }
+
+                if ($foundBoard) {
+                    break;
+                }
+
+                $page++;
+            } else {
+                break;
+            }
+        } while ($page);
+        return $foundBoard;
+    }
+
+    /**
+     * Método para obtener la información de los tableros (boards)
+     */
+    public function getFindBoardIdByClientId($clientId)
+    {
+
+        $foundBoard = $this->findBoardIdByClientId($clientId);
+        if ($foundBoard) {
+            return response()->json(['board_id' => $foundBoard['id']]);
+        } else {
+            return response()->json(['message' => 'Board not found'], 404);
+        }
+    }
+
+
     public function findBoardIdByName($boardName)
     {
         $page = 1;
@@ -416,6 +471,60 @@ class MondayController extends Controller
         } else {
             return response()->json(['message' => 'Board not found'], 404);
         }
+    }
+
+    /**
+     * Método para obtener la información de un tablero por su id
+     * @param $boardId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getBoardById($boardId)
+    {
+        $query = <<<GRAPHQL
+        {
+            boards(ids: [$boardId]) {
+                id
+                name
+                state
+                workspace_id
+            }
+        }
+        GRAPHQL;
+
+        // Llamar al método query para realizar la petición GraphQL
+        $response = $this->query(new Request(['query' => $query]));
+        return response()->json($response->original['data']['boards']);
+    }
+
+
+    //get boards by array of ids
+    public function getBoardsByIds($boardIds)
+    {
+        $boardIdsStringified = '[';
+        foreach ($boardIds as $boardId) {
+            $boardIdsStringified .= '"' . $boardId . '",';
+        }
+        //remove last comma
+        $boardIdsStringified = rtrim($boardIdsStringified, ',');
+        $boardIdsStringified .= ']';
+        //array to string
+
+
+        $query = <<<GRAPHQL
+        {
+            boards(ids: $boardIdsStringified) {
+                id
+                name
+                state
+                workspace_id
+            }
+        }
+        GRAPHQL;
+
+        // Llamar al método query para realizar la petición GraphQL
+        $response = $this->query(new Request(['query' => $query]));
+
+        return response()->json($response->original['data']['boards']);
     }
 
     public function getTimeTrakingMondayBoardSummary($boardId)
@@ -521,7 +630,7 @@ class MondayController extends Controller
                 $totalUserHours += $totalHours;
             }
             $globalTotalHours += $totalUserHours;
-            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
             $report .= "*----------------------------------------*\n\n";
         }
         $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
