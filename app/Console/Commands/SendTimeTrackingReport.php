@@ -83,8 +83,10 @@ class SendTimeTrackingReport extends Command
             }
         }
 //        dd(array_unique($boardsIds));
-        $this->info('Enviando reporte de cada proyecto a slack');
-        $slackController->timeTrackingMondayBoardSummaryWithBoardIds(array_unique($boardsIds));
+        if ($tipo == 'completo') {
+            $this->info('Enviando reporte de cada proyecto a slack');
+            $slackController->timeTrackingMondayBoardSummaryWithBoardIds(array_unique($boardsIds));
+        }
         $this->info('Enviando reporte general a slack');
 
         $report .= $timeTrackingReportController->toReport($usersData, $tipo);

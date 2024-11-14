@@ -2550,8 +2550,9 @@ class SlackController extends Controller
         $allChannels = $this->conversations_list('exclude_archived=true&types=private_channel')->getData();
         $channel_id = null;
         foreach ($allChannels->channels as $channel) {
-
-            if (explode('_', $channel->name)[0] == $client_id) {
+            $channel_id = null;
+            preg_match('/(Subelementos de )?(\d*)_.*/', $channel->name, $matches);
+            if (count($matches) === 3 && $matches[2] == $client_id) {
                 $channel_id = $channel->id;
                 break;
             }
@@ -2596,13 +2597,10 @@ class SlackController extends Controller
             preg_match('/(Subelementos de )?(\d*)_.*/', $board_name, $matches);
 //            $client_id = explode('_', $board_name)[0];
 //            $client_id = explode('Subelementos de ', $board_name);
+            $client_id = $matches[2] ?? null;
 
-            $client_ids[] = $matches[2] ?? $board_name;
-
-        }
-
-        if (count($client_ids) > 0) {
-            foreach ($client_ids as $client_id) {
+            if ($client_id !== null && !in_array($client_id, $client_ids)) {
+                $client_ids[] = $client_id;
                 $channel_id = $this->findChannelIdByClientId($client_id);
 
                 if ($channel_id) {
@@ -2611,7 +2609,9 @@ class SlackController extends Controller
                     $report = $mondayController->generateTimeTrackingReport($mondaySummary);
                     $slackController->chat_post_message($channel_id, $report);
                 }
+                $channel_id = null;
             }
+
         }
         return true;
 

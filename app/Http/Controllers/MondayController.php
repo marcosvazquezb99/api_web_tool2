@@ -630,7 +630,7 @@ class MondayController extends Controller
                 $totalUserHours += $totalHours;
             }
             $globalTotalHours += $totalUserHours;
-            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
             $report .= "*----------------------------------------*\n\n";
         }
         $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
