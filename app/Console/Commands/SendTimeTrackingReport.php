@@ -31,26 +31,26 @@ class SendTimeTrackingReport extends Command
         /*$slackController->timeTrackingMondayBoardSummaryWithBoardIds(['1623214457']);
         $this->info('Verificar en slack');*/
         // Obtener los argumentos del comando
-        $slackController->timeTrackingMondayBoardSummaryWithBoardIds([
-                "1699857255",
-                "1693810807",
-                "1693800504",
-                "1685206840",
-                "1652561334",
-                "1542576910",
-                "1383274320",
-                "1667729854",
-                "1657803522",
-                "1651892951",
-                "1643528562",
-                "1623214457",
-                "1597063527",
-                "1664352227",
-                "1664348119",
-                "1661855098",
-                "1418732497",
-            ]
-        );
+        /* $slackController->timeTrackingMondayBoardSummaryWithBoardIds([
+                 "1699857255",
+                 "1693810807",
+                 "1693800504",
+                 "1685206840",
+                 "1652561334",
+                 "1542576910",
+                 "1383274320",
+                 "1667729854",
+                 "1657803522",
+                 "1651892951",
+                 "1643528562",
+                 "1623214457",
+                 "1597063527",
+                 "1664352227",
+                 "1664348119",
+                 "1661855098",
+                 "1418732497",
+             ]
+         );*/
         $days = $this->argument('days');
         $label = $this->argument('label');
         $channel = $this->argument('channel');
