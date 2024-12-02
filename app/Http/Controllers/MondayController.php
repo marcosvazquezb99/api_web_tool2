@@ -527,7 +527,7 @@ class MondayController extends Controller
         return response()->json($response->original['data']['boards']);
     }
 
-    public function getTimeTrakingMondayBoardSummary($boardId)
+    public function getTimeTrakingMondayBoardSummary($boardId, $fromDate = null, $toDate = null)
     {
 
         $columns = 'TimeTrackingValue,PeopleValue';

@@ -18,6 +18,30 @@ class SlackController extends Controller
         $this->slackToken = env('SLACK_API_TOKEN'); // Add your Slack token here
     }
 
+    function isValidSlackRequest(Request $request)
+    {
+        // Tu signing secret de Slack
+        $signingSecret = env('SLACK_SIGNING_SECRET');
+
+        // Encabezados de Slack
+        $slackSignature = $request->header('X-Slack-Signature');
+        $slackTimestamp = $request->header('X-Slack-Request-Timestamp');
+
+        // Verificar que el timestamp no sea muy antiguo (previene ataques de repetición)
+        if (abs(time() - $slackTimestamp) > 300) {
+            return false; // Solicitud expirada
+        }
+
+        // Construir la base string
+        $baseString = "v0:$slackTimestamp:" . $request->getContent();
+
+        // Generar la firma
+        $hash = 'v0=' . hash_hmac('sha256', $baseString, $signingSecret);
+
+        // Comparar firmas usando hash_equals para evitar ataques de tiempo
+        return hash_equals($hash, $slackSignature);
+    }
+
     public function admin_users_set_owner(Request $request)
     {
         $response = $this->client->post($this->url . '/admin.users.setOwner', [
@@ -2565,6 +2589,9 @@ class SlackController extends Controller
     public function getTimeTrackingMondayBoardSummary(Request $request)
     {
         $slackController = new SlackController();
+        if (!$slackController->isValidSlackRequest($request)) {
+            return response('Unauthorized', 401);
+        }
         $mondayController = new MondayController();
         $channel_id = $request->input('channel_id');
         $channel_name = $request->input('channel_name');
@@ -2578,13 +2605,13 @@ class SlackController extends Controller
         }
         $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board_id);
         $report = $mondayController->generateTimeTrackingReport($mondaySummary);
-        $response = $slackController->chat_post_message('C07PF06HF46', $report);
+        $response = $slackController->chat_post_message($channel_id, $report);
         return response()->json($response);
     }
 
 
     //Get summary of a board on monday and send it to slack
-    public function timeTrackingMondayBoardSummaryWithBoardIds($board_ids, $channel_id = null): bool
+    public function timeTrackingMondayBoardSummaryWithBoardIds($board_ids, $from = null, $to = null): bool
     {
         $slackController = new SlackController();
         $mondayController = new MondayController();
