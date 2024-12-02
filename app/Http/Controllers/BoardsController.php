@@ -61,4 +61,11 @@ class BoardsController extends Controller
             return response()->json(['message' => 'Client not found'], 404);
         }
     }
+
+    //find boards where active is true
+    public function getActiveBoards()
+    {
+        $clients = Boards::where('active', true)->get();
+        return response()->json($clients);
+    }
 }
