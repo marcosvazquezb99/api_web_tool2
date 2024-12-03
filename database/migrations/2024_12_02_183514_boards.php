@@ -14,8 +14,7 @@ class Boards extends Migration
     public function up()
     {
         Schema::create('boards', function (Blueprint $table) {
-            $table->id();
-            $table->integer('board_id');
+            $table->bigInteger('id')->primary();
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('active')->default(false);

@@ -12,6 +12,7 @@ class Boards extends Model
     protected $table = 'boards';
 
     protected $fillable = [
+        'id',
         'name',
         'description',
         'board_id',

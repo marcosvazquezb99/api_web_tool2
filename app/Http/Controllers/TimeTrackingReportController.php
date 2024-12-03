@@ -233,7 +233,7 @@ class TimeTrackingReportController extends Controller
         // Si no se proporciona $toDate, se asume la fecha actual
         $toDate = $toDate ? Carbon::parse($toDate)->endOfDay() : Carbon::now()->endOfDay();
         $fromDate = Carbon::parse($fromDate)->startOfDay(); // Asegurar que la fecha de inicio es al principio del día
-
+        $mondayController = new MondayController();
         $data = $this->getMondayData();
 //        dd($data);
         $usersData = []; // Agrupar las actividades por usuario
@@ -256,7 +256,7 @@ class TimeTrackingReportController extends Controller
 
                             if ($endTime !== false && $startTimeCarbon->between($fromDate, $toDate) && $endTimeCarbon->between($fromDate, $toDate)) {
                                 $manuallyEntered = !empty($record['manually_entered_start_date']) || !empty($record['manually_entered_end_time']) ? 'Sí' : 'No';
-                                $user = $this->getUser($record['started_user_id']);
+                                $user = $mondayController->getUser($record['started_user_id']);
                                 // Obtener nombres de usuario
                                 $startedUserName = $user['name'];
                                 if (!in_array($user['id'], $excludedUsers)) {
@@ -268,6 +268,7 @@ class TimeTrackingReportController extends Controller
                                     if (!isset($usersData[$userId])) {
                                         $usersData[$userId] = [
                                             'name' => $startedUserName,
+                                            'slack_id' => $user['slack_user_id'] ?? null,
                                             'tableros' => []
                                         ];
                                     }

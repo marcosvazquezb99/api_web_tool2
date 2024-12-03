@@ -38,6 +38,7 @@ class WpMigration extends Migration
      */
     public function down()
     {
-        //
+        //Drop the table
+        Schema::dropIfExists('wp_migrations');
     }
 }
