@@ -41,7 +41,6 @@ class TimeTrackingProject extends Command
     {
         $slackController = new SlackController();
         $channel_id = 'C083ATGUVGB';
-        //Get boards of database where field active is true
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
         foreach ($activeBoards as $board) {
