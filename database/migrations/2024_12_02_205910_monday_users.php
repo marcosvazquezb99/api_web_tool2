@@ -27,6 +27,10 @@ class MondayUsers extends Migration
      */
     public function down()
     {
-        //
+        //drop the field on users table
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('monday_user_id');
+            $table->dropColumn('slack_user_id');
+        });
     }
 }

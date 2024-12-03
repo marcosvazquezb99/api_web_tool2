@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
@@ -352,10 +353,42 @@ class MondayController extends Controller
         return $this->query(new Request(['query' => $query]));
     }
 
-    public function getUser($userId)
+    public function getUsers($page = 1, $limit = null)
     {
-        $response = $this->getUserRequest($userId);
-        return $response->original['data']['users'][0];
+        $limit = $limit ?? $this->limit;
+
+        $query = <<<GRAPHQL
+        {
+            users(limit: $limit, page:$page) {
+                id
+                name
+                email
+            }
+        }
+        GRAPHQL;
+
+        // Llamar al método query para realizar la petición GraphQL
+        $response = $this->query(new Request(['query' => $query]));
+        return response()->json($response->original['data']['users']);
+    }
+
+    public function getUser($userId, $bypassLocal = false)
+    {
+//        dd($userId);
+        $user = null;
+        //get user from database
+        if (!$bypassLocal) {
+            $user = User::where('monday_user_id', $userId)->first()->toArray();
+        }
+        //if not exists get user from monday
+        if (!$user) {
+            $response = $this->getUserRequest($userId);
+            //check if user exists in local database monday_user_id
+
+            return $response->original['data']['users'][0];
+        } else {
+            return $user;
+        }
     }
 
     public function getUserRequest($userId)
@@ -557,6 +590,7 @@ class MondayController extends Controller
 
                             $manuallyEntered = !empty($record['manually_entered_start_date']) || !empty($record['manually_entered_end_time']) ? 'Sí' : 'No';
                             $user = $this->getUser($record['started_user_id']);
+//                            dd($user);
                             // Obtener nombres de usuario
                             $startedUserName = $user['name'];
 
@@ -567,21 +601,27 @@ class MondayController extends Controller
                                 if (!isset($usersData[$userId])) {
                                     $usersData[$userId] = [
                                         'name' => $startedUserName,
+                                        'slack_id' => $user['slack_user_id'] ?? null,
                                         'tableros' => []
                                     ];
                                 }
 
 
                                 // Calcular la duración
-                                $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
-                                if (!isset($usersData[$userId]['tableros'][$board_name][$item['name']])) {
-                                    $usersData[$userId]['tableros'][$board_name][$item['name']] = [
-                                        'tarea' => $item['name'],
-                                        'duracion' => (float)number_format($duration, 2),
-                                        'manual' => $manuallyEntered
-                                    ];
-                                } else {
-                                    $usersData[$userId]['tableros'][$board_name][$item['name']]['duracion'] += (float)number_format($duration, 2);
+                                if ($endTime) {
+                                    $duration = (strtotime($endTime) - strtotime($startTime)) / (60 * 60);
+                                    if ($duration < 0) {
+                                        dd($duration, $startTime, $endTime, $record);
+                                    }
+                                    if (!isset($usersData[$userId]['tableros'][$board_name][$item['name']])) {
+                                        $usersData[$userId]['tableros'][$board_name][$item['name']] = [
+                                            'tarea' => $item['name'],
+                                            'duracion' => (float)number_format($duration, 2),
+                                            'manual' => $manuallyEntered
+                                        ];
+                                    } else {
+                                        $usersData[$userId]['tableros'][$board_name][$item['name']]['duracion'] += (float)number_format($duration, 2);
+                                    }
                                 }
                             }
                         }
@@ -628,8 +668,10 @@ class MondayController extends Controller
 
                 $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
                 $totalUserHours += $totalHours;
+                $globalTotalHours += $totalHours;
             }
-            $globalTotalHours += $totalUserHours;
+//            dd($totalUserHours, $globalTotalHours, gmdate('H:i', $totalUserHours * 3600), gmdate('H:i', $globalTotalHours * 3600));
+//            $globalTotalHours += $totalUserHours;
             $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
             $report .= "*----------------------------------------*\n\n";
         }

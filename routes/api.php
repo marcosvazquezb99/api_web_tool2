@@ -43,7 +43,7 @@ Route::prefix('slack')->middleware('auth:sanctum')->group(function () {
     Route::post('admin/conversations/create', [SlackController::class, 'admin_conversations_create']);
     Route::get('conversations/info', [SlackController::class, 'conversations_info']);
     Route::get('conversations/list', [SlackController::class, 'get_conversations_list']);
-    Route::get('users/list', [SlackController::class, 'users_list']);
+    Route::get('users/list', [SlackController::class, 'users_list_request']);
     // Añade aquí el resto de las rutas para las funciones generadas
 });
 

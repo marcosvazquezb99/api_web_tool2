@@ -339,7 +339,15 @@ class TimeTrackingReportController extends Controller
         $report = '';
         $globalTotalHours = 0;
         foreach ($usersData as $user) {
-            $report .= "Usuario: *{$user['name']}*\n";
+
+            if ($user['slack_id'] !== null) {
+                $userDisplayName = "<@{$user['slack_id']}>";
+            } else {
+                $userDisplayName = $user['name'];
+            }
+//            dd($userDisplayName, $user['name'], $user['slack_id'] == null);
+
+            $report .= "Usuario: *$userDisplayName*\n";
             $totalUserHours = 0;
             foreach ($user['tableros'] as $tablero => $actividades) {
                 $totalHours = 0;
@@ -348,30 +356,32 @@ class TimeTrackingReportController extends Controller
                 $report .= ":\n";
                 foreach ($actividades as $actividad) {
 //                    dd($actividad);
-                    try {
                         if ($type != 'simple') {
                             $report .= "    Actividad: *{$actividad['tarea']}* - ";
-                            $report .= "Tiempo: " . gmdate('H:i', $actividad['duracion'] * 3600) . " horas - ";
+                            $report .= "Tiempo: " . $this->formatTime($actividad['duracion']) . " horas - ";
                             $report .= "Manual: {$actividad['manual']}\n";
                         }
-                        $selectedBoards[] = $actividad['boardId'];
                         $totalHours += $actividad['duracion'];
-                    } catch (\Exception $e) {
-                        error_log($e->getMessage() . ' Error en la generación del reporte' . $actividad->toArray());
-                    }
+
 
                 }
-
-                $report .= " - Total de horas: " . gmdate('H:i', $totalHours * 3600) . " horas\n";
+                $report .= " - Total de horas: " . $this->formatTime($totalHours) . " horas\n";
                 $totalUserHours += $totalHours;
             }
             $globalTotalHours += $totalUserHours;
-            $report .= "  Total de horas trabajadas por {$user['name']}: " . gmdate('H:i', $totalUserHours * 3600) . " horas\n";
+            $report .= "  Total de horas trabajadas por {$user['name']}: " . $this->formatTime($totalUserHours) . " horas\n";
             $report .= "*----------------------------------------*\n\n";
         }
-        $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
+        $report .= "Total de horas: " . $this->formatTime($globalTotalHours) . " horas\n";
 
         return $report;
+    }
+
+    public function formatTime($time)
+    {
+        $hours = floor($time);
+        $minutes = ($time - $hours) * 60;
+        return sprintf("%02d:%02d", $hours, $minutes);
     }
 
 }

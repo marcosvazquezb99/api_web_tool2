@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\BoardsController;
+use App\Http\Controllers\MondayController;
 use App\Http\Controllers\SlackController;
+use App\Http\Controllers\TimeTrackingReportController;
 use Illuminate\Console\Command;
 
 class TimeTrackingProject extends Command
@@ -40,14 +42,19 @@ class TimeTrackingProject extends Command
     public function handle()
     {
         $slackController = new SlackController();
+        $mondayController = new MondayController();
+        $timeTrackingReportController = new TimeTrackingReportController();
         $channel_id = 'C083ATGUVGB';
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
         foreach ($activeBoards as $board) {
-            $slackController->chat_post_message(
-                $channel_id,
-                "--------------------------------------------------\nTablero: " . $board->name);
-            $slackController->getTimeTrackingMondayBoardSummary($board->board_id, $channel_id);
+            $report = "--------------------------------------------------\nTablero: " . $board->name . "\n";
+            $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board->board_id);
+            //convert $mondaySummary to array
+//            dd($mondaySummary);
+            $report .= $timeTrackingReportController->toReport($mondaySummary, 'simple');
+            $slackController->chat_post_message($channel_id, $report);
+//            $slackController->getTimeTrackingMondayBoardSummary($board->board_id, $channel_id);
         }
         return 0;
     }

@@ -2392,7 +2392,27 @@ class SlackController extends Controller
         return response()->json(json_decode($response->getBody(), true));
     }
 
-    public function users_list(Request $request)
+
+    public function users_list($cursor = '', $limit = 10, $include_locale = true)
+    {
+
+
+        $response = $this->client->get($this->url . '/users.list', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->slackToken
+            ],
+            'query' => [
+                'cursor' => $cursor,
+                'limit' => $limit,
+                'include_locale' => $include_locale
+            ] // Handle query parameters here
+        ]);
+
+        return response()->json(json_decode($response->getBody(), true));
+    }
+
+
+    public function users_list_request(Request $request)
     {
         $response = $this->client->get($this->url . '/users.list', [
             'headers' => [

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Console\Commands\sync;
 
 use App\Http\Controllers\MondayController;
 use App\Models\Boards;
@@ -49,7 +49,11 @@ class SyncBoards extends Command
             foreach ($boards as $board) {
                 $board_id = $board->id;
                 $name = $board->name;
-                $board = Boards::firstOrNew(['board_id' => $board_id]);
+                $board = Boards::firstOrCreate(['board_id' => $board_id],
+                    [
+                        'name' => $name,
+                        'board_id' => $board_id
+                    ]);
                 $board->name = $name;
                 $board->save();
             }
