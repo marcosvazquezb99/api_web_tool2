@@ -49,7 +49,7 @@ class TimeTrackingProject extends Command
         $activeBoards = $boardsController->getActiveBoards()->getData();
         foreach ($activeBoards as $board) {
             $report = "--------------------------------------------------\nTablero: " . $board->name . "\n";
-            $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board->board_id);
+            $mondaySummary = $mondayController->getTimeTrakingMondayBoardSummary($board->id);
             //convert $mondaySummary to array
 //            dd($mondaySummary);
             $report .= $timeTrackingReportController->toReport($mondaySummary, 'simple');
