@@ -15,11 +15,10 @@ class Boards extends Model
         'id',
         'name',
         'description',
-        'board_id',
         'active',
         'last_time',
     ];
 
-    protected $primaryKey = 'board_id';
+    protected $primaryKey = 'id';
 
 }
