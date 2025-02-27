@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\MondayController;
 use App\Http\Controllers\SlackController;
 use App\Http\Controllers\TimeTrackingReportController;
 use Carbon\Carbon;
@@ -28,36 +29,14 @@ class SendTimeTrackingReport extends Command
     {
         // Instanciar el controlador de Slack
         $slackController = new SlackController();
-        /*$slackController->timeTrackingMondayBoardSummaryWithBoardIds(['1623214457']);
-        $this->info('Verificar en slack');*/
-        // Obtener los argumentos del comando
-        /* $slackController->timeTrackingMondayBoardSummaryWithBoardIds([
-                 "1699857255",
-                 "1693810807",
-                 "1693800504",
-                 "1685206840",
-                 "1652561334",
-                 "1542576910",
-                 "1383274320",
-                 "1667729854",
-                 "1657803522",
-                 "1651892951",
-                 "1643528562",
-                 "1623214457",
-                 "1597063527",
-                 "1664352227",
-                 "1664348119",
-                 "1661855098",
-                 "1418732497",
-             ]
-         );*/
+
         $days = $this->argument('days');
         $label = $this->argument('label');
         $channel = $this->argument('channel');
         $tipo = $this->argument('tipo');
 
         // Instanciar el controlador de reportes de Monday
-        $timeTrackingReportController = new TimeTrackingReportController();
+        $timeTrackingReportController = new TimeTrackingReportController(new MondayController());
 
         // Obtener la fecha límite (días atrás) y la fecha actual
         $fromDate = Carbon::now()->subDays($days)->startOfDay(); // Desde hace "X" días
@@ -70,39 +49,59 @@ class SendTimeTrackingReport extends Command
         $report .= "Desde el *{$fromDate->format('d/m/Y H:i')}* hasta el *{$now->format('d/m/Y H:i')}*:\n\n";
         $this->info('Generando reporte: Procesando datos de Monday.com');
         $usersData = $timeTrackingReportController->processMondayData($fromDate, $now->toDateString());
-//        dd($usersData);
         $this->info('Generando reporte: Finalización de procesado de datos de Monday.com');
         $this->info('Extrayendo ids de los tableros');
-        //get all boards ids
-        $boardsIds = [];
-        foreach ($usersData as $user) {
-            foreach ($user['tableros'] as $tablero => $actividades) {
-                foreach ($actividades as $actividad) {
-                    $boardsIds[] = $actividad['boardId'];
-                }
-            }
-        }
-//        dd(array_unique($boardsIds));
-        /*if ($tipo == 'completo') {
-            $this->info('Enviando reporte de cada proyecto a slack');
-            $slackController->timeTrackingMondayBoardSummaryWithBoardIds(array_unique($boardsIds));
-        }*/
+
+
         $this->info('Enviando reporte general a slack');
 
         $report .= $timeTrackingReportController->toReport($usersData, $tipo);
 
-        // Generar el reporte con las fechas correctas
-//        $report .= $timeTrackingReportController->generateReport($fromDate->toDateString(), $tipo, $now->toDateString());
+        // subir nivel de actividades
+        $slackController->chat_post_message($channel, $report);
 
+        if ($tipo == 'completo') {
+            $this->info('Enviando reporte de cada proyecto a slack');
+            // Ordenar actividades de los usuarios por fecha
+            foreach ($usersData as &$user) {
+                $user['actividades'] = [];
+                foreach ($user['tableros'] as $key => $tablero) {
+                    $user['actividades'] = array_merge($user['actividades'] ?? [], $tablero);
+                }
+                usort($user['actividades'], function ($a, $b) {
+                    if ($a['startTime']->eq($b['startTime'])) {
+                        return 0;
+                    }
+                    return $a['startTime']->lt($b['startTime']) ? -1 : 1;
+                });
+                unset($user['tableros']);
 
-        // Enviar el reporte al canal de Slack (sustituye 'C07PF06HF46' por el ID de tu canal)
-        $response = $slackController->chat_post_message($channel, $report);
+            }
+            //info de tablero y fecha de cada actividad
+
+            $report = '';
+            unset($user);
+            $report .= 'Actividades de los usuarios cronologicamente' . "\n";
+            foreach ($usersData as $user) {
+                $userDisplayName = $user['slack_id'] ? "<@{$user['slack_id']}>" : $user['name'];
+                $report .= "\tUsuario: $userDisplayName\n";
+                foreach ($user['actividades'] as $actividad) {
+                    $manual = $actividad['manual'] ? '*' : '';
+                    $report .= "\t\t $manual" . $actividad['startTime']->format('d-m-Y H:i')
+                        . " - {$actividad['endTime']->format('H:i')}"
+                        . " - <{$actividad['boardUrl']}|{$actividad['boardName']}>" .
+                        " - <{$actividad['tareaUrl']}|{$actividad['tarea']}> \n";
+                }
+            }
+            $response = $slackController->chat_post_message($channel, $report);
+        }
+
 
         // Mostrar un mensaje en la consola si fue exitoso
         if ($response == 200) {
             $this->info('El reporte diario ha sido enviado exitosamente a Slack');
         } else {
-            $this->error('Error al enviar el reporte a Slack: ' . ($response['error'] ?? 'Error desconocido'));
+            $this->error('Error al enviar el reporte a Slack');
         }
     }
 }

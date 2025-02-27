@@ -290,31 +290,49 @@ class MondayController extends Controller
     /**
      * Método para obtener los elementos (items) de un tablero específico
      */
-    public function getItemsByBoard($boardId, $columns = null, $cursor = null, $limit = null)
+    public function getItemsByBoard($boardId, $columns = null, $cursor = null, $limit = null, $rules = [])
     {
         $columnsData = '';
+        $queryParams = '';
+        // Obtener las columnas a solicitar
         if ($columns) {
             $columns = explode(',', $columns);
         } else {
             $columns = array_keys($this->itemsData);
         }
+        // Crear la cadena de columnas a solicitar
         foreach ($columns as $column) {
             $columnsData .= $this->itemsData[$column];
         }
+
+        // Obtener el límite de elementos (items) del tablero
         $limit = $limit ?? $this->limit;
+
         if ($cursor === null) {
             $cursor = 'null';
         } else {
             $cursor = '"' . $cursor . '"';
         }
 
+        $queryParams .= 'rules: [';
+        if (count($rules)) {
+            foreach ($rules as $key => $value) {
+                $queryParams .= '{column_id: "' . $value['column_id'] . '", operator: ' . $value['operator'] . ', compare_value: ' . json_encode($value['compare_value']) . '}';
+                if ($key < count($rules) - 1) {
+                    $queryParams .= ',';
+                }
+            }
+        }
+        $queryParams .= ']';
         $query = <<<GRAPHQL
         {
             boards(limit: 1, ids: ["$boardId"]) {
                 name
-                items_page(limit: $limit, cursor: $cursor) {
+                url
+                items_page(limit: $limit, cursor: $cursor, query_params:{ $queryParams }) {
                     items {
                         id
+                        url
                         name
                         updated_at
                         column_values {
@@ -378,7 +396,7 @@ class MondayController extends Controller
         $user = null;
         //get user from database
         if (!$bypassLocal) {
-            $user = User::where('monday_user_id', $userId)->first()->toArray();
+            $user = User::where('monday_user_id', $userId)->first();
         }
         //if not exists get user from monday
         if (!$user) {
@@ -469,10 +487,6 @@ class MondayController extends Controller
         do {
             $boards = $this->getBoards($page)->original;
 
-//            $response = $this->query(new Request(["query" => $query]));
-//            dd($boards->original);
-
-
             if (count($boards) > 0) {
                 foreach ($boards as $board) {
                     if ($board['name'] === $boardName) {
@@ -504,6 +518,7 @@ class MondayController extends Controller
         } else {
             return response()->json(['message' => 'Board not found'], 404);
         }
+
     }
 
     /**
@@ -678,5 +693,39 @@ class MondayController extends Controller
         $report .= "Total de horas: " . gmdate('H:i', $globalTotalHours * 3600) . " horas\n";
 
         return $report;
+    }
+
+    public function getTasksOfBoards($boardsIds)
+    {
+        $tasks = [];
+        /*foreach ($boardsIds as $boardId){
+            $columns = 'StatusValue,TextValue,DateValue,TimeTrackingValue,PeopleValue';
+            $cursor = null;
+            do {
+                $boardResponse = $this->getItemsByBoard($boardId, $columns, $cursor);
+                if ($boardResponse->status() !== 200) {
+                    return response()->json(['error' => 'Error al obtener los items del tablero'], 500);
+                }
+                $board = $boardResponse->original;
+                $items = $board['data']['boards'][0]['items_page']['items'];
+                $cursor = $board['data']['boards'][0]['items_page']['cursor'];
+                if ($cursor === 'null') {
+                    $cursor = null;
+                }
+                foreach ($items as $item) {
+                    $task = [
+                        'name' => $item['name'],
+                        'status' => $item['column_values'][0]['label'],
+                        'description' => $item['column_values'][1]['text'],
+                        'deadline' => $item['column_values'][2]['date'],
+                        'time_tracking' => $item['column_values'][3]['text'],
+                        'assigned' => $item['column_values'][4]['persons_and_teams']
+                    ];
+                    array_push($tasks, $task);
+                }
+            } while ($cursor !== null);
+        }*/
+        return $tasks;
+
     }
 }

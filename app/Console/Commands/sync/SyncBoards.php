@@ -49,10 +49,13 @@ class SyncBoards extends Command
             foreach ($boards as $board) {
                 $board_id = $board->id;
                 $name = $board->name;
-                $board = Boards::firstOrCreate(['id' => $board_id],
+                $boardUrl = $board->url;
+//                dd($boardUrl);
+                $board = Boards::updateOrCreate(['id' => $board_id],
                     [
                         'name' => $name,
-                        'id' => $board_id
+                        'id' => $board_id,
+                        'url' => $boardUrl
                     ]);
                 $board->name = $name;
                 $board->save();

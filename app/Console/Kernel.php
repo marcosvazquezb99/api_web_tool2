@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
 //        $schedule->command('time-tracking:send-report 30 "Reporte mensual" ')->monthlyOn('30', '18:00');
         $schedule->command('sync:boards')->dailyAt('00:00');
         $schedule->command('sync:users')->dailyAt('00:00');
+        $schedule->command('sync:slack-channels')->dailyAt('00:00');
         $schedule->command('time-tracking:active-boards')->weekdays()->at('07:00');
 
     }

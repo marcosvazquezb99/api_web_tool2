@@ -14,6 +14,7 @@ class Boards extends Model
     protected $fillable = [
         'id',
         'name',
+        'url',
         'description',
         'active',
         'last_time',

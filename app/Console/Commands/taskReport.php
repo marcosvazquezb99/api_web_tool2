@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Boards;
+use Illuminate\Console\Command;
+
+class taskReport extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'task:report';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Command description';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
+
+    /**
+     * Execute the console command.
+     *
+     * @return int
+     */
+    public function handle()
+    {
+        $boards = Boards::pluck('id');
+
+
+        return 0;
+    }
+}

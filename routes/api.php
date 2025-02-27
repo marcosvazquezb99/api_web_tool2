@@ -83,4 +83,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('websites', WebsiteController::class);
     Route::apiResource('servers', ServerController::class);
     Route::apiResource('wp-migrations', \App\Http\Controllers\WpMigrationController::class);
+    Route::get('elementor/page-composer', [\App\Http\Controllers\elementorController::class, 'generatePageFromTemplate']);
 });
