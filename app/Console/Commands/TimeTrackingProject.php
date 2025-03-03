@@ -45,7 +45,7 @@ class TimeTrackingProject extends Command
         $slackController = new SlackController();
         $mondayController = new MondayController();
         $timeTrackingReportController = new TimeTrackingReportController($mondayController);
-        $channel_id = 'C08DSE9SC3Z';
+        $channel_id = 'C083ATGUVGB';
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
         foreach ($activeBoards as $board) {
