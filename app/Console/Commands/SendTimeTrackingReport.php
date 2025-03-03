@@ -81,7 +81,8 @@ class SendTimeTrackingReport extends Command
 
             $report = '';
             unset($user);
-            $report .= 'Actividades de los usuarios cronologicamente' . "\n";
+            $report .= '*Actividades de los usuarios cronologicamente*' . "\n";
+            $channel_crono = 'C08FULSS7HR';
             foreach ($usersData as $user) {
                 $userDisplayName = $user['slack_id'] ? "<@{$user['slack_id']}>" : $user['name'];
                 $report .= "\tUsuario: $userDisplayName\n";
@@ -93,7 +94,7 @@ class SendTimeTrackingReport extends Command
                         " - <{$actividad['tareaUrl']}|{$actividad['tarea']}> \n";
                 }
             }
-            $response = $slackController->chat_post_message($channel, $report);
+            $response = $slackController->chat_post_message($channel_crono, $report);
         }
 
 
