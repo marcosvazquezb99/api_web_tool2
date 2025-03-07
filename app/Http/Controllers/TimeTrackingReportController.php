@@ -353,7 +353,7 @@ class TimeTrackingReportController extends Controller
         return $report;
     }
 
-    private function formatTime($time)
+    public function formatTime($time)
     {
         $hours = floor($time);
         $minutes = ($time - $hours) * 60;
