@@ -48,15 +48,15 @@ class TimeTrackingProject extends Command
         $channel_id = 'C083ATGUVGB';
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
+
         foreach ($activeBoards as $board) {
             $report = "------------------ Tablero: *" . $board->name . "* ------------------\n";
-            $mondaySummary = $timeTrackingReportController->processMondayData(null, null, [$board->id, '1478200211']);
+            $mondaySummary = $timeTrackingReportController->processMondayData(null, null, [$board->id]);
 
 
-//            dd(0 ?? $mondaySummary);
             $lastInteraction = $this->getLatestTime($mondaySummary);
             $this->info('Last interaction: ' . $lastInteraction . ' from board: ' . $board->name);
-            // si la última interacción es mayor a 1 día
+            // si la última interacción es mayor a 5 días
             if ($lastInteraction->diffInDays() > 5) {
                 $report .= "*No se han registrado actividades en este tablero en los últimos días.*\n";
                 try {
@@ -68,9 +68,6 @@ class TimeTrackingProject extends Command
                     $report .= "*No se ha podido enviar el reporte a Slack.*\n";
                 }
             }
-//            dd($slackChannel->id);
-//            $report .= $timeTrackingReportController->toReport($mondaySummary, 'simple');
-
 
             $report .= $timeTrackingReportController->toReport($mondaySummary, 'simple');
             $slackController->chat_post_message($channel_id, $report);
@@ -96,7 +93,6 @@ class TimeTrackingProject extends Command
                 }
             }
         }
-//        dd($latestTime);
         return $latestTime;
     }
 }
