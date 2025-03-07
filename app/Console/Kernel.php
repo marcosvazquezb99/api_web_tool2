@@ -29,7 +29,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('sync:slack-channels')->dailyAt('00:00');
 
         //::::::::::::::::::::::::::    TASKS    :::::::::::::::::::::::::::::::::::::::::://
-        $schedule->command('task:upcomming today')->weekdays()->at('08:00');
+        $schedule->command('task:upcomming today C08GS9MT8N8')->weekdays()->at('08:00');
         $schedule->command('task:upcomming tomorrow C08GS9MT8N8')->weekdays()->at('15:00');
 
     }
