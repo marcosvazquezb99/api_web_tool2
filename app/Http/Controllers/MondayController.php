@@ -302,7 +302,8 @@ class MondayController extends Controller
         }
         // Crear la cadena de columnas a solicitar
         foreach ($columns as $column) {
-            $columnsData .= $this->itemsData[$column];
+            $columnsData .= $this->itemsData[$column] . "
+            column{title}";
         }
 
         // Obtener el límite de elementos (items) del tablero
@@ -616,7 +617,7 @@ class MondayController extends Controller
                                 if (!isset($usersData[$userId])) {
                                     $usersData[$userId] = [
                                         'name' => $startedUserName,
-                                        'slack_id' => $user['slack_user_id'] ?? null,
+                                        'slack_user_id' => $user['slack_user_id'] ?? null,
                                         'tableros' => []
                                     ];
                                 }

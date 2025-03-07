@@ -262,7 +262,7 @@ class TimeTrackingReportController extends Controller
                                     if (!isset($usersData[$userId])) {
                                         $usersData[$userId] = [
                                             'name' => $user['name'],  // Use name from getUser
-                                            'slack_id' => $user['slack_user_id'] ?? null,
+                                            'slack_user_id' => $user['slack_user_id'] ?? null,
                                             'user_monday_id' => $userId,
                                             'tableros' => []
                                         ];
@@ -315,7 +315,7 @@ class TimeTrackingReportController extends Controller
         $globalTotalHours = 0;
 
         foreach ($usersData as $user) {
-            $userDisplayName = $user['slack_id'] ? "<@{$user['slack_id']}>" : $user['name'];
+            $userDisplayName = $user['slack_user_id'] ? "<@{$user['slack_user_id']}>" : $user['name'];
 
             $report .= "Usuario: *$userDisplayName*\n";
             $totalUserHours = 0;

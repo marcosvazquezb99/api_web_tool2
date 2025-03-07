@@ -46,7 +46,7 @@ class SendTimeTrackingReport extends Command
         $report = "*$label*\n\n";
 
         // Crear el encabezado del reporte con las fechas formateadas
-        $report .= "Desde el *{$fromDate->format('d/m/Y H:i')}* hasta el *{$now->format('d/m/Y H:i')}*:\n\n";
+        $report .= "Desde el *{$fromDate->setTimezone('Europe/Madrid')->format('d/m/Y H:i')}* hasta el *{$now->setTimezone('Europe/Madrid')->format('d/m/Y H:i')}*:\n\n";
         $this->info('Generando reporte: Procesando datos de Monday.com');
         $usersData = $timeTrackingReportController->processMondayData($fromDate, $now->toDateString());
         $this->info('Generando reporte: Finalización de procesado de datos de Monday.com');
@@ -84,12 +84,12 @@ class SendTimeTrackingReport extends Command
             $report .= '*Actividades de los usuarios cronologicamente*' . "\n";
             $channel_crono = 'C08FULSS7HR';
             foreach ($usersData as $user) {
-                $userDisplayName = $user['slack_id'] ? "<@{$user['slack_id']}>" : $user['name'];
+                $userDisplayName = $user['slack_user_id'] ? "<@{$user['slack_user_id']}>" : $user['name'];
                 $report .= "\tUsuario: $userDisplayName\n";
                 foreach ($user['actividades'] as $actividad) {
                     $manual = $actividad['manual'] ? '*' : '';
-                    $report .= "\t\t $manual" . $actividad['startTime']->format('d-m-Y H:i')
-                        . " - {$actividad['endTime']->format('H:i')}"
+                    $report .= "\t\t $manual" . $actividad['startTime']->setTimezone('Europe/Madrid')->format('d-m-Y H:i')
+                        . " - {$actividad['endTime']->setTimezone('Europe/Madrid')->format('H:i')}"
                         . " - <{$actividad['boardUrl']}|{$actividad['boardName']}>" .
                         " - <{$actividad['tareaUrl']}|{$actividad['tarea']}> \n";
                 }
