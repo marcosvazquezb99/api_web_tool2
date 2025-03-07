@@ -16,7 +16,7 @@ class TimeTrackingProject extends Command
      *
      * @var string
      */
-    protected $signature = 'time-tracking:active-boards';
+    protected $signature = 'time-tracking:active-boards {channel=C083ATGUVGB} ';
 
     /**
      * The console command description.
@@ -45,7 +45,8 @@ class TimeTrackingProject extends Command
         $slackController = new SlackController();
         $mondayController = new MondayController();
         $timeTrackingReportController = new TimeTrackingReportController($mondayController);
-        $channel_id = 'C083ATGUVGB';
+        $channel_id = $this->argument('channel');
+//        $channel_id = 'C083ATGUVGB';
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
 
