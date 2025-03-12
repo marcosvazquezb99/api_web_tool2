@@ -2687,7 +2687,7 @@ class SlackController extends Controller
     public function formatDisplayUser($user)
     {
         if (is_null($user)) {
-            $userDisplayName = '';
+            $userDisplayName = 'Sin especificar';
         } else {
             $userDisplayName = $user['slack_user_id'] ? "<@{$user['slack_user_id']}>" : $user['name'];
         }

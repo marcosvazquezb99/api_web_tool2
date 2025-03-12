@@ -69,7 +69,7 @@ class UpcommingTask extends Command
             [
                 "column_id" => "date", // ID de la columna de fecha
                 "operator" => "any_of",
-                "compare_value" => ["$time"]
+                "compare_value" => ["EXACT", "{$date->format('Y-m-d')}"]
             ],
             [
                 "column_id" => "date", // ID de la columna de fecha
@@ -116,9 +116,12 @@ class UpcommingTask extends Command
                     $user = null;
                     $hours_estimate = null;
                     foreach ($task->column_values as $column_value) {
-                        if (isset($column_value->persons_and_teams)) {
+                        if (isset($column_value->persons_and_teams) && count($column_value->persons_and_teams)) {
                             //     $this->info($column_value->persons_and_teams[0]->id);
+
+
                             $user = $mondayController->getUser($column_value->persons_and_teams[0]->id);
+
                         }
                         if (isset($column_value->column->title)
                             && $column_value->column->title == "Fecha prevista") {
@@ -132,8 +135,9 @@ class UpcommingTask extends Command
 
 
                     }
+
 //                    $this->info($user->name);
-                    $tasksByUser[$user->monday_user_id][] = [
+                    $tasksByUser[$user->monday_user_id ?? 'Sin asignar'][] = [
                         'task' => $task,
                         'user' => $user,
                         'board' => $board,
