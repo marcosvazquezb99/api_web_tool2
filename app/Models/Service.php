@@ -12,7 +12,9 @@ class Service extends Model
     protected $fillable = [
         'name',
         'description',
-        'price',
+        'holded_id',
+        'type',
+        'recurring',
     ];
 
     protected $primaryKey = 'service_id';

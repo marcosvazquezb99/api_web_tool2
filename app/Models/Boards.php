@@ -18,6 +18,8 @@ class Boards extends Model
         'description',
         'active',
         'last_time',
+        'channel_id',
+        'internal_id',
     ];
 
     protected $primaryKey = 'id';

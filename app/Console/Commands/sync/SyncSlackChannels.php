@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Console\Commands\Sync;
+namespace App\Console\Commands\sync;
 
 use App\Http\Controllers\SlackController;
 use App\Models\Boards;
 use App\Models\SlackChannel;
+use Exception;
 use Illuminate\Console\Command;
-
-// Asegúrate de tener un modelo para tu tabla
+use Illuminate\Support\Facades\Log;
 
 class SyncSlackChannels extends Command
 {
     protected $signature = 'sync:slack-channels';
-    protected $description = 'Sincroniza los canales de Slack con la base de datos.';
+    protected $description = 'Synchronize Slack channels with the database and map to Monday.com boards';
 
     public function __construct()
     {
@@ -21,65 +21,85 @@ class SyncSlackChannels extends Command
 
     public function handle()
     {
-        // 1. Obtener los canales de Slack (aquí debes usar la API de Slack)
-        $slackChannels = $this->getSlackChannels();
+        try {
+            $this->info('Starting Slack channel synchronization...');
 
-        // 2. Sincronizar con la base de datos
-        foreach ($slackChannels as $channel) {
-            SlackChannel::updateOrCreate(
-                ['id' => $channel['id']], // Criteria to find an existing record
-                [                           // Data to update or create
-                    'slack_channel_name' => $channel['name'],
-                    'monday_board_id' => $channel['monday_board_id'],
-                ])->save();
+            $slackChannels = $this->getSlackChannels();
+            $count = 0;
+
+            foreach ($slackChannels as $channel) {
+                SlackChannel::updateOrCreate(
+                    ['id' => $channel['id']],
+                    [
+                        'slack_channel_name' => $channel['name'],
+                        'monday_board_id' => $channel['monday_board_id'],
+                    ]
+                );
+                $count++;
+            }
+
+            $this->info("Successfully synchronized {$count} Slack channels.");
+            return 0;
+        } catch (Exception $e) {
+            $this->error('Error during Slack channel synchronization: ' . $e->getMessage());
+            Log::error('Slack channel sync error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return 1;
         }
-
-        $this->info('Canales de Slack sincronizados correctamente.');
     }
 
+    /**
+     * Fetch channels from Slack API
+     *
+     * @return array List of channels with Monday.com board mappings
+     */
     private function getSlackChannels()
     {
-        // Aquí debes implementar la lógica para obtener los canales de Slack
-        // Puedes usar la API de Slack directamente o alguna librería que te facilite la tarea
-        // Este es solo un ejemplo, debes adaptarlo a tu configuración
+        $this->info('Fetching channels from Slack...');
         $slackController = new SlackController();
         $result = $slackController->conversations_list('exclude_archived=true&types=private_channel')->getData();
-//        dd($result->getData()->channels);
+
         $channels = [];
         foreach ($result->channels as $channel) {
+            $mondayBoardId = $this->getMondayBoardId($channel->name);
 
             $channels[] = [
                 'id' => $channel->id,
                 'name' => $channel->name,
-                'monday_board_id' => $this->getMondayBoardId($channel->name) // Función para obtener el ID de Monday.com
+                'monday_board_id' => $mondayBoardId
             ];
+
+            if ($mondayBoardId) {
+                $this->info("Mapped channel '{$channel->name}' to Monday board ID: {$mondayBoardId}");
+            } else {
+                $this->warn("No Monday board mapping found for channel: {$channel->name}");
+            }
         }
 
+        $this->info('Retrieved ' . count($channels) . ' channels from Slack');
         return $channels;
     }
 
+    /**
+     * Find corresponding Monday.com board ID for a Slack channel
+     *
+     * @param string $slackChannelName The Slack channel name
+     * @return int|null Monday.com board ID or null if not found
+     */
     private function getMondayBoardId($slackChannelName)
     {
-        // Aquí debes implementar la lógica para obtener el ID del tablero de Monday.com
-        // a partir del ID del canal de Slack. Esto dependerá de cómo tengas configurada
-        // la relación entre ambos.
-        // Este es solo un ejemplo, debes adaptarlo a tu configuración.
+        // Try exact match first
+        $board = Boards::where('name', $slackChannelName)->first();
 
-        // Ejemplo: buscar en una tabla de relación
-        $relation = Boards::where('name', $slackChannelName)
-            ->first();
-        if (!$relation) {
-            // Si no se encuentra, puedes devolver null o lanzar una excepción
-            // dependiendo de cómo quieras manejarlo
-            // Divide el nombre del canal de Slack por "_"
+        if (!$board) {
+            // Try matching by first segment (before underscore)
             $parts = explode('_', $slackChannelName);
-
-            // Toma el primer elemento del array resultante (índice 0)
             $firstPart = $parts[0];
-            $relation = Boards::where('name', 'like', $firstPart . '_%')->first();
-        }
-        //dd($relation->id);
 
-        return $relation ? $relation->id : null;
+            if ($firstPart) {
+                $board = Boards::where('name', 'like', $firstPart . '_%')->first();
+            }
+        }
+
+        return $board ? $board->id : null;
     }
 }

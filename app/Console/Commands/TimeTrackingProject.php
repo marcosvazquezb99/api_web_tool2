@@ -46,14 +46,16 @@ class TimeTrackingProject extends Command
         $mondayController = new MondayController();
         $timeTrackingReportController = new TimeTrackingReportController($mondayController);
         $channel_id = $this->argument('channel');
-//        $channel_id = 'C083ATGUVGB';
+//        $channel_id = 'C08DSE9SC3Z';
         $boardsController = new BoardsController();
         $activeBoards = $boardsController->getActiveBoards()->getData();
-
+        //dd($activeBoards);
         foreach ($activeBoards as $board) {
             $report = "------------------ Tablero: *" . $board->name . "* ------------------\n";
             $mondaySummary = $timeTrackingReportController->processMondayData(null, null, [$board->id]);
-
+            if (count($mondaySummary) == 0) {
+                continue;
+            }
 
             $lastInteraction = $this->getLatestTime($mondaySummary);
             $this->info('Last interaction: ' . $lastInteraction . ' from board: ' . $board->name);
@@ -79,7 +81,6 @@ class TimeTrackingProject extends Command
     public function getLatestTime($request)
     {
         $data = $request; // Get the data from the request
-
         $latestTime = null;
 
         foreach ($data as $user) {

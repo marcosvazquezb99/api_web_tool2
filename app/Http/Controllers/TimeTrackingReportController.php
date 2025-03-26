@@ -228,6 +228,7 @@ class TimeTrackingReportController extends Controller
                 return [];
             }
         }
+
         return $allBoards;
     }
 
@@ -238,7 +239,6 @@ class TimeTrackingReportController extends Controller
         $fromDate = $fromDate ? Carbon::parse($fromDate)->startOfDay() : null;
         $data = $this->getMondayData($boardsId);
         $usersData = [];
-
         foreach ($data as $board) {
             foreach ($board['items_page']['items'] as $item) {
                 foreach ($item['column_values'] as $column) {

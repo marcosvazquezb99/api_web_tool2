@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'monday_user_id',
         'slack_user_id',
+        'holded_id',
     ];
 
     /**

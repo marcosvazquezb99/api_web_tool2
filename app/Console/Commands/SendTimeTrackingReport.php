@@ -58,7 +58,7 @@ class SendTimeTrackingReport extends Command
         $report .= $timeTrackingReportController->toReport($usersData, $tipo);
 
         // subir nivel de actividades
-        $slackController->chat_post_message($channel, $report);
+        $response = $slackController->chat_post_message($channel, $report);
 
         if ($tipo == 'completo') {
             $this->info('Enviando reporte de cada proyecto a slack');

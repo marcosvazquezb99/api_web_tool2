@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
 
         //::::::::::::::::::::::::::    TIME TRACKING    :::::::::::::::::::::::::::::::::::::::::://
         $schedule->command('time-tracking:send-report 0 "Reporte Diario" "simple" "C07R3NTSV09"')->weekdays()->at('19:00');
+        $schedule->command('time-tracking:send-report 30 "Reporte Diario" "simple" "C07R3NTSV09"')->lastDayOfMonth();
         $schedule->command('time-tracking:send-report 0 "Reporte Diario" "completo"')->weekdays()->at('19:00');
         $schedule->command('time-tracking:active-boards')->weekdays()->at('08:00');
 //        $schedule->command('time-tracking:send-report 5 "Reporte Semanal" ')->fridays()->at('18:00');
@@ -27,6 +28,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('sync:boards')->dailyAt('00:00');
         $schedule->command('sync:users')->dailyAt('00:00');
         $schedule->command('sync:slack-channels')->dailyAt('00:00');
+        $schedule->command('sync:holded-employees')->dailyAt('00:00');
+        $schedule->command('sync:holded-customers')->dailyAt('00:00');
+        $schedule->command('sync:holded-services')->dailyAt('00:00');
+        $schedule->command('sync:holidays')->dailyAt('00:00');
 
         //::::::::::::::::::::::::::    TASKS    :::::::::::::::::::::::::::::::::::::::::://
         $schedule->command('task:upcomming today C08GS9MT8N8')->weekdays()->at('08:00');

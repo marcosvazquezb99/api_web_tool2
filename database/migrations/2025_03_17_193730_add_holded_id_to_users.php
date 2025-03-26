@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddUrlToBoards extends Migration
+class AddHoldedIdToUsers extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,8 @@ class AddUrlToBoards extends Migration
      */
     public function up()
     {
-        // Add a new column to the boards table
-        Schema::table('boards', function (Blueprint $table) {
-            $table->string('url')->nullable()->after('name');
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('holded_id')->nullable()->after('slack_user_id');
         });
     }
 
@@ -26,8 +25,8 @@ class AddUrlToBoards extends Migration
      */
     public function down()
     {
-        Schema::table('boards', function (Blueprint $table) {
-            $table->dropColumn('url');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('holded_id');
         });
     }
 }

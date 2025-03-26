@@ -7,6 +7,18 @@ use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
+
+    public const types = [
+        'mantenimiento',
+        'redessociales',
+        'hosting',
+        'wordpress',
+        'campanas',
+        'seo',
+        'proyecto',
+    ];
+
+
     public function index()
     {
         $services = Service::all();

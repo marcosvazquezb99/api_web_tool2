@@ -12,7 +12,9 @@ class Client extends Model
     protected $fillable = [
         'name',
         'email',
-        'phone'
+        'phone',
+        'internal_id',
+        'holded_id',
     ];
     protected $primaryKey = 'client_id';
 

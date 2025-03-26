@@ -89,17 +89,18 @@ class UpcommingTask extends Command
 
             $cursor = null;
             do {
-                $tasks = $mondayController->getItemsByBoard($boardId, null, $cursor, null, $rules)->getData();
+                $tasks = $mondayController->getItemsByBoard($boardId, null, $cursor, null, $rules)[0];
+
                 try {
-                    $cursor = $tasks->data->boards[0]->items_page->cursor;
+                    $cursor = $tasks['data']['boards'][0]['items_page']['cursor'];
                     if ($cursor === "null") {
                         $cursor = null;
                     }
 
-                    $board = $tasks->data->boards[0];
-                    $boardName = $board->name;
-                    $boardUrl = $board->url;
-                    $tasks = $board->items_page->items;
+                    $board = $tasks['data']['boards'][0];
+                    $boardName = $board['name'];
+                    $boardUrl = $board['url'];
+                    $tasks = $board['items_page']['items'];
                     //$tasks = $tasks->items;
                 } catch (\Exception $e) {
                     $this->info('Error en el tablero: ' . $boardId . ' ' . $e->getMessage());
@@ -115,21 +116,21 @@ class UpcommingTask extends Command
                 foreach ($tasks as $task) {
                     $user = null;
                     $hours_estimate = null;
-                    foreach ($task->column_values as $column_value) {
-                        if (isset($column_value->persons_and_teams) && count($column_value->persons_and_teams)) {
+                    foreach ($task['column_values'] as $column_value) {
+                        if (isset($column_value['persons_and_teams']) && count($column_value['persons_and_teams'])) {
                             //     $this->info($column_value->persons_and_teams[0]->id);
 
 
-                            $user = $mondayController->getUser($column_value->persons_and_teams[0]->id);
-
+                            $user = $mondayController->getUser($column_value['persons_and_teams'][0]['id']);
+//                            dd($user);
                         }
-                        if (isset($column_value->column->title)
-                            && $column_value->column->title == "Fecha prevista") {
-                            $date = $column_value->text;
-                        } elseif (isset($column_value->column->title)
-                            && $column_value->column->title == "Horas programadas") {
+                        if (isset($column_value['column']['title'])
+                            && $column_value['column']['title'] == "Fecha prevista") {
+                            $date = $column_value['text'];
+                        } elseif (isset($column_value['column']['title'])
+                            && $column_value['column']['title'] == "Horas programadas") {
                             //dd($task);
-                            $hours_estimate = $column_value->number ?? null;
+                            $hours_estimate = $column_value['number'] ?? null;
 
                         }
 
@@ -157,7 +158,7 @@ class UpcommingTask extends Command
             $hour_counter = 0;
             foreach ($user as $task) {
 //dd($task['date']);
-                $report .= "\t- <{$task['task']->url}|{$task['task']->name}> ({$timeTrackingReportController->formatTime($task['hours_estimate'])} - {$task['date']}) - <{$task['board']->url}|{$task['board']->name}>\n";
+                $report .= "\t- <{$task['task']['url']}|{$task['task']['name']}> ({$timeTrackingReportController->formatTime($task['hours_estimate'])} - {$task['date']}) - <{$task['board']['url']}|{$task['board']['name']}>\n";
 //                try {
 //                    dd($hour_counter);
                 $hour_counter += $task['hours_estimate'];
@@ -170,9 +171,7 @@ class UpcommingTask extends Command
             $report .= "Horas totales: {$this->formatTime($hour_counter)}\n\n";
 
         }
-//        dd($report);
         $slackController->chat_post_message($channel, $report);
-//        dd($mondayController->getItemsByBoard(1709501863, null, null, null, $rules));
 
         return 0;
     }

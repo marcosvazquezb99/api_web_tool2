@@ -37,6 +37,10 @@ Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user'])
 Route::middleware('auth:sanctum')->get('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/migrate-wordpress', [WordPressMigrationController::class, 'migrate']);
 
+// WhatsApp Cloud API Routes
+Route::get('/webhook/whatsapp', [App\Http\Controllers\WhatsAppCloudApiController::class, 'verifyWebhook']);
+Route::post('/webhook/whatsapp', [App\Http\Controllers\WhatsAppCloudApiController::class, 'handleWebhook']);
+
 Route::prefix('slack')->middleware('auth:sanctum')->group(function () {
     Route::get('usergroups/list', [SlackController::class, 'usergroups_list']);
     Route::post('admin/users/set-owner', [SlackController::class, 'admin_users_set_owner']);
