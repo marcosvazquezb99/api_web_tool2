@@ -35,7 +35,7 @@ class BoardService
 
         $response = $this->client->query($query);
         if ($response['status'] === 200) {
-            return $response['data']['data']['boards'];
+            return $response[0]['data']['boards'];
         }
         return [];
     }
