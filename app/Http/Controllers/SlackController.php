@@ -2696,12 +2696,24 @@ class SlackController extends Controller
 
     }
 
+    /**
+     * Get user info from Holded and display it in Slack
+     * @param Request $request
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse|\Illuminate\Http\Response
+     */
+
     public function getUserInfoRequest(Request $request)
     {
+
         $slackController = new SlackController();
         if (!$slackController->isValidSlackRequest($request)) {
             return response('Unauthorized', 401);
         }
+
+        return response()->json([
+            'response_type' => 'ephemeral',
+            'text' => $request->all()
+        ]);
 
         // Get channel name and extract client ID
         $channel_id = $request->input('channel_id');
@@ -2786,7 +2798,7 @@ class SlackController extends Controller
             foreach ($uniqueServices as $serviceId => $service) {
                 $response_text .= "• *{$service['name']}*\n";
                 $response_text .= "  Tipo: {$service['type']}, Recurrente: {$service['recurring']}\n";
-                $response_text .= "  Precio: {$service['price']}€ x {$service['quantity']} unidades\n\n";
+                $response_text .= "  Unidades: {$service['quantity']}\n\n";
             }
         } else {
             $response_text .= "*No se encontraron servicios contratados*\n";
