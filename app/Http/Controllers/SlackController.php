@@ -2729,7 +2729,7 @@ class SlackController extends Controller
 
         // Get documents from Holded
         $documentsController = new \App\Http\Controllers\Holded\DocumentsHoldedController();
-        $due_date = \Carbon\Carbon::now()->subDays(35);
+        $due_date = \Carbon\Carbon::now()->subMonth();
         $now = \Carbon\Carbon::now();
 
         // Get documents for this client
