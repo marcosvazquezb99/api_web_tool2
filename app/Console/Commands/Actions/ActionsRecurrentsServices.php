@@ -3,7 +3,6 @@
 namespace App\Console\Commands\Actions;
 
 use App\Http\Actions\HolidayCheckerAction;
-use App\Http\Controllers\Holded\ContactsHoldedController;
 use App\Http\Controllers\Holded\DocumentsHoldedController;
 use App\Http\Controllers\MondayController;
 use App\Http\Controllers\ServiceController;
@@ -107,6 +106,7 @@ class ActionsRecurrentsServices extends Command
                 switch ($type_service) {
                     case 'redessociales':
                         $this->processSocialMediaService($contact, $contact_internal_id, $contact_name, $now, $rrssColumnDateId, $rrssColumnStimatedDateId);
+                        // dd('RRSS');
                         break;
                 }
             }
@@ -134,7 +134,7 @@ class ActionsRecurrentsServices extends Command
         $mondayController = new MondayController();
 
         // Find the template board
-        $template = Boards::where('name', 'like', 'TEST Plantilla Clientes RRSS📱%')->first();
+        $template = Boards::where('name', 'like', 'Plantilla Clientes RRSS📱%')->first();
         if (!$template) {
             $this->error("Template board not found for social media services");
             return;
@@ -237,7 +237,14 @@ class ActionsRecurrentsServices extends Command
                 // Update the deadline date if an estimated date is set
                 if (isset($column['text']) && $column['text'] != '') {
                     try {
-                        $day = explode('-', $column['text'])[0];
+                        $day = explode('-', $column['text']);
+                        if (count($day) == 1) {
+                            $day = $day[0];
+                        } else {
+
+                            $day = random_int(trim($day[0]), trim($day[1]));
+                            //$day = $day[2];
+                        }
                         $dateStimated = Carbon::createFromDate($now->year, $now->month, $day);
 
                         // Check if date is a holiday or weekend, and adjust if necessary

@@ -2695,4 +2695,113 @@ class SlackController extends Controller
         return $userDisplayName;
 
     }
+
+    public function getUserInfoRequest(Request $request)
+    {
+        $slackController = new SlackController();
+        if (!$slackController->isValidSlackRequest($request)) {
+            return response('Unauthorized', 401);
+        }
+
+        // Get channel name and extract client ID
+        $channel_id = $request->input('channel_id');
+        $channel_name = $request->input('channel_name');
+
+        // Extract client ID from channel name (format: 123_clientname)
+        preg_match('/^(\d+)_/', $channel_name, $matches);
+        if (empty($matches) || !isset($matches[1])) {
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'No se pudo determinar el ID del cliente desde el nombre del canal.'
+            ]);
+        }
+
+        $client_internal_id = $matches[1];
+
+        // Find client in database
+        $client = \App\Models\Client::where('internal_id', $client_internal_id)->first();
+        if (!$client || !$client->holded_id) {
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'No se encontró el cliente con ID interno: ' . $client_internal_id
+            ]);
+        }
+
+        // Get documents from Holded
+        $documentsController = new \App\Http\Controllers\Holded\DocumentsHoldedController();
+        $due_date = \Carbon\Carbon::now()->subDays(35);
+        $now = \Carbon\Carbon::now();
+
+        // Get documents for this client
+        $documents = $documentsController->getDocuments('invoice', $due_date, $now, $client->holded_id);
+
+        if (empty($documents)) {
+            $this->chat_post_message($channel_id, 'No se encontraron documentos para el cliente ' . $client->name . ' en los últimos 35 días.');
+            return response('', 200);
+        }
+
+        // Format the response
+        $response_text = "Información de productos para *" . $client->name . "*:\n\n";
+
+        // Track unique services
+        $uniqueServices = [];
+
+        foreach ($documents as $document) {
+            $doc_date = isset($document['date']) ? date('d/m/Y', strtotime($document['date'])) : 'Sin fecha';
+            $response_text .= "*Documento:* " . ($document['number'] ?? 'Sin número') . " (" . $doc_date . ")\n";
+
+            if (isset($document['products']) && !empty($document['products'])) {
+                $response_text .= "*Productos:*\n";
+
+                foreach ($document['products'] as $product) {
+                    $name = $product['name'] ?? 'Sin nombre';
+                    $description = $product['description'] ?? '';
+                    $price = $product['price'] ?? 0;
+                    $quantity = $product['units'] ?? 1;
+
+                    // Check if this is a service with a serviceId
+                    $serviceId = $product['serviceId'] ?? null;
+                    if ($serviceId) {
+                        // Look up service details
+                        $service = \App\Models\Service::where("holded_id", $serviceId)->first();
+                        if ($service) {
+                            // Add to unique services if not already there
+                            if (!isset($uniqueServices[$serviceId])) {
+                                $uniqueServices[$serviceId] = [
+                                    'name' => $name,
+                                    'description' => $description,
+                                    'price' => $price,
+                                    'quantity' => $quantity,
+                                    'type' => $service->type,
+                                    'recurring' => $service->recurring ? 'Sí' : 'No'
+                                ];
+                            }
+                        }
+                    }
+
+                    $response_text .= "• *{$name}*: {$description}\n";
+                    $response_text .= "  Precio: {$price}€ x {$quantity} unidades\n";
+                }
+            } else {
+                $response_text .= "No hay productos en este documento.\n";
+            }
+
+            $response_text .= "\n";
+        }
+
+        // If there are services, add a summary section
+        if (!empty($uniqueServices)) {
+            $response_text .= "*Resumen de Servicios Contratados:*\n";
+            $service['type'] = $service['type'] ?? 'No especificado';
+            foreach ($uniqueServices as $serviceId => $service) {
+                $response_text .= "• *{$service['name']}*\n";
+                $response_text .= "  Tipo: {$service['type']}, Recurrente: {$service['recurring']}\n";
+                $response_text .= "  Precio: {$service['price']}€ x {$service['quantity']} unidades\n";
+            }
+        }
+
+        // Send the response back to Slack
+        $this->chat_post_message($channel_id, $response_text);
+        return response('', 200);
+    }
 }

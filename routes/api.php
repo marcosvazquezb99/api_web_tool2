@@ -33,6 +33,7 @@ Route::post('login', [AuthController::class, 'login']);
 Route::post('register', [AuthController::class, 'register']);
 Route::post('newform', [FormsController::class, 'formCreation']);
 Route::post('slack/summary_proyect', [SlackController::class, 'getTimeTrackingMondayBoardSummaryRequest']);
+Route::post('slack/user-info', [SlackController::class, 'getUserInfoRequest']);
 Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'user']);
 Route::middleware('auth:sanctum')->get('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->post('/migrate-wordpress', [WordPressMigrationController::class, 'migrate']);

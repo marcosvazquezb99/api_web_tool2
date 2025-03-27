@@ -12,9 +12,10 @@ class DocumentsHoldedController extends HoldedController
      * @param string $docType Document type (invoice, salesreceipt, etc.)
      * @param mixed $startDate Start date
      * @param mixed $endDate End date
+     * @param string|null $contactId Filter by contact ID
      * @return array
      */
-    public function getDocuments(string $docType, $startDate = null, $endDate = null): array
+    public function getDocuments(string $docType, $startDate = null, $endDate = null, $contactId = null): array
     {
         $endpoint = $this->url . '/' . $docType;
         $params = [];
@@ -22,6 +23,10 @@ class DocumentsHoldedController extends HoldedController
         if ($startDate && $endDate) {
             $params['starttmp'] = $startDate->timestamp;
             $params['endtmp'] = $endDate->timestamp;
+        }
+
+        if ($contactId) {
+            $params['contact'] = $contactId;
         }
 
         $url = $this->buildUrl($endpoint, $params);
