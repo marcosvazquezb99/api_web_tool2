@@ -2710,9 +2710,10 @@ class SlackController extends Controller
             return response('Unauthorized', 401);
         }
 
+
         return response()->json([
             'response_type' => 'ephemeral',
-            'text' => $request->all()
+            'text' => json_encode($request->all())
         ]);
 
         // Get channel name and extract client ID
