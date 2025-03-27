@@ -2720,7 +2720,7 @@ class SlackController extends Controller
             ]);
         }
 
-        $client_internal_id = $matches[1];
+        $client_internal_id = number_format($matches[1]);
 
         // Find ALL clients in database with this internal ID
         $clients = \App\Models\Client::where('internal_id', $client_internal_id)->get();
