@@ -2741,18 +2741,16 @@ class SlackController extends Controller
         }
 
         // Format the response
-        $response_text = "Información de productos para *" . $client->name . "*:\n\n";
+        $response_text = "*Información del Cliente:*\n";
+        $response_text .= "• *Nombre:* " . $client->name . "\n";
+        $response_text .= "• *Email:* " . ($client->email ?: 'No especificado') . "\n\n";
 
         // Track unique services
         $uniqueServices = [];
 
+        // Process all documents to extract service information
         foreach ($documents as $document) {
-            $doc_date = isset($document['date']) ? date('d/m/Y', strtotime($document['date'])) : 'Sin fecha';
-            $response_text .= "*Documento:* " . ($document['number'] ?? 'Sin número') . " (" . $doc_date . ")\n";
-
             if (isset($document['products']) && !empty($document['products'])) {
-                $response_text .= "*Productos:*\n";
-
                 foreach ($document['products'] as $product) {
                     $name = $product['name'] ?? 'Sin nombre';
                     $description = $product['description'] ?? '';
@@ -2772,32 +2770,26 @@ class SlackController extends Controller
                                     'description' => $description,
                                     'price' => $price,
                                     'quantity' => $quantity,
-                                    'type' => $service->type,
+                                    'type' => $service->type ?? 'No especificado',
                                     'recurring' => $service->recurring ? 'Sí' : 'No'
                                 ];
                             }
                         }
                     }
-
-                    $response_text .= "• *{$name}*: {$description}\n";
-                    $response_text .= "  Precio: {$price}€ x {$quantity} unidades\n";
                 }
-            } else {
-                $response_text .= "No hay productos en este documento.\n";
             }
-
-            $response_text .= "\n";
         }
 
-        // If there are services, add a summary section
+        // Display the services summary
         if (!empty($uniqueServices)) {
             $response_text .= "*Resumen de Servicios Contratados:*\n";
-            $service['type'] = $service['type'] ?? 'No especificado';
             foreach ($uniqueServices as $serviceId => $service) {
                 $response_text .= "• *{$service['name']}*\n";
                 $response_text .= "  Tipo: {$service['type']}, Recurrente: {$service['recurring']}\n";
-                $response_text .= "  Precio: {$service['price']}€ x {$service['quantity']} unidades\n";
+                $response_text .= "  Precio: {$service['price']}€ x {$service['quantity']} unidades\n\n";
             }
+        } else {
+            $response_text .= "*No se encontraron servicios contratados*\n";
         }
 
         // Send the response back to Slack
