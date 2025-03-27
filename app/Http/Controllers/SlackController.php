@@ -2806,7 +2806,10 @@ class SlackController extends Controller
         }
 
         // Send the response back to Slack
-        $this->chat_post_message($channel_id, $response_text);
-        return response('', 200);
+        //$this->chat_post_message($channel_id, $response_text);
+        return response()->json([
+            'response_type' => 'ephemeral',
+            'text' => $response_text
+        ]);
     }
 }
