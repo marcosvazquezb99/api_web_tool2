@@ -2701,15 +2701,11 @@ class SlackController extends Controller
      * @param Request $request
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\Routing\ResponseFactory|\Illuminate\Http\JsonResponse|\Illuminate\Http\Response
      */
-
     public function getUserInfoRequest(Request $request)
     {
-
-        $slackController = new SlackController();
-        /*if (!$slackController->isValidSlackRequest($request)) {
+        /*if (!$this->isValidSlackRequest($request)) {
             return response('Unauthorized', 401);
         }*/
-
 
         // Get channel name and extract client ID
         $channel_id = $request->input('channel_id');
@@ -2726,90 +2722,60 @@ class SlackController extends Controller
 
         $client_internal_id = $matches[1];
 
-        // Find client in database
-        $client = \App\Models\Client::where('internal_id', $client_internal_id)->first();
-        if (!$client || !$client->holded_id) {
+        // Find ALL clients in database with this internal ID
+        $clients = \App\Models\Client::where('internal_id', $client_internal_id)->get();
+
+        if ($clients->isEmpty()) {
             return response()->json([
                 'response_type' => 'ephemeral',
                 'text' => 'No se encontró el cliente con ID interno: ' . $client_internal_id
             ]);
         }
 
-        // Get documents from Holded
+        // Filter out clients without Holded ID
+        $clientsWithHoldedId = $clients->filter(function ($client) {
+            return !empty($client->holded_id);
+        });
+
+        if ($clientsWithHoldedId->isEmpty()) {
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'No se encontraron clientes con ID de Holded para el ID interno: ' . $client_internal_id
+            ]);
+        }
+
         $documentsController = new \App\Http\Controllers\Holded\DocumentsHoldedController();
-        $due_date = \Carbon\Carbon::now()->subMonth();
-        $now = \Carbon\Carbon::now();
+        $combinedResponse = '';
+        $foundServices = false;
 
-        // Get documents for this client
-        $documents = $documentsController->getDocuments('invoice', $due_date, $now, $client->holded_id);
-        if (empty($documents)) {
-            $this->chat_post_message($channel_id, 'No se encontraron documentos para el cliente ' . $client->name . ' en los últimos 35 días.');
-            return response('', 200);
-        }
+        // Process each client and combine their information
+        foreach ($clientsWithHoldedId as $client) {
+            $clientInfo = $documentsController->getClientServicesInfo($client->holded_id);
 
-        // Format the response
-        $response_text = "*Información del Cliente:*\n";
-        $response_text .= "• *Nombre:* " . $client->name . "\n";
-        $response_text .= "• *Email:* " . ($client->email ?: 'No especificado') . "\n\n";
+            if ($clientInfo['success'] && !empty($clientInfo['services'])) {
+                $foundServices = true;
 
-        // Track unique services
-        $uniqueServices = [];
-
-        // Process all documents to extract service information
-        foreach ($documents as $document) {
-            if (isset($document['from']['docType']) && $document['from']['docType'] == 'invoicerecurring') {
-                $recurringDocument = true;
-            } else {
-                $recurringDocument = false;
-            }
-
-            if (!empty($document['products'])) {
-                foreach ($document['products'] as $product) {
-                    $name = $product['name'] ?? 'Sin nombre';
-                    $description = $product['description'] ?? '';
-                    $price = $product['price'] ?? 0;
-                    $quantity = $product['units'] ?? 1;
-
-                    // Check if this is a service with a serviceId
-                    $serviceId = $product['serviceId'] ?? null;
-                    if ($serviceId) {
-                        // Look up service details
-                        $service = \App\Models\Service::where("holded_id", $serviceId)->first();
-                        if ($service) {
-                            // Add to unique services if not already there
-                            if (!isset($uniqueServices[$serviceId])) {
-                                $uniqueServices[$serviceId] = [
-                                    'name' => $name,
-                                    'description' => $description,
-                                    'price' => $price,
-                                    'quantity' => $quantity,
-                                    'type' => $service->type ?? 'No especificado',
-                                    'recurring' => $recurringDocument || $service->recurring ? 'Sí' : 'No'
-                                ];
-                            }
-                        }
-                    }
+                // Add a separator between multiple clients
+                if (!empty($combinedResponse)) {
+                    $combinedResponse .= "\n\n-------------------------------------------\n\n";
                 }
+
+                $combinedResponse .= $clientInfo['formatted_text'];
             }
         }
 
-        // Display the services summary
-        if (!empty($uniqueServices)) {
-            $response_text .= "*Resumen de Servicios Contratados:*\n";
-            foreach ($uniqueServices as $serviceId => $service) {
-                $response_text .= "• *{$service['name']}*\n";
-                $response_text .= "  Tipo: {$service['type']}, Recurrente: {$service['recurring']}\n";
-                $response_text .= "  Unidades: {$service['quantity']}\n\n";
-            }
-        } else {
-            $response_text .= "*No se encontraron servicios contratados*\n";
+        // If no services were found for any client, show a generic message
+        if (!$foundServices) {
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'No se encontraron servicios contratados para ninguno de los clientes con ID interno: ' . $client_internal_id
+            ]);
         }
 
-        // Send the response back to Slack
-        //$this->chat_post_message($channel_id, $response_text);
+        // Send the combined formatted response back to Slack
         return response()->json([
             'response_type' => 'ephemeral',
-            'text' => $response_text
+            'text' => $combinedResponse
         ]);
     }
 }
