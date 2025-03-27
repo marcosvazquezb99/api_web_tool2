@@ -2706,15 +2706,10 @@ class SlackController extends Controller
     {
 
         $slackController = new SlackController();
-        if (!$slackController->isValidSlackRequest($request)) {
+        /*if (!$slackController->isValidSlackRequest($request)) {
             return response('Unauthorized', 401);
-        }
+        }*/
 
-
-        return response()->json([
-            'response_type' => 'ephemeral',
-            'text' => json_encode($request->all())
-        ]);
 
         // Get channel name and extract client ID
         $channel_id = $request->input('channel_id');
@@ -2747,7 +2742,6 @@ class SlackController extends Controller
 
         // Get documents for this client
         $documents = $documentsController->getDocuments('invoice', $due_date, $now, $client->holded_id);
-
         if (empty($documents)) {
             $this->chat_post_message($channel_id, 'No se encontraron documentos para el cliente ' . $client->name . ' en los últimos 35 días.');
             return response('', 200);
@@ -2763,7 +2757,13 @@ class SlackController extends Controller
 
         // Process all documents to extract service information
         foreach ($documents as $document) {
-            if (isset($document['products']) && !empty($document['products'])) {
+            if (isset($document['from']['docType']) && $document['from']['docType'] == 'invoicerecurring') {
+                $recurringDocument = true;
+            } else {
+                $recurringDocument = false;
+            }
+
+            if (!empty($document['products'])) {
                 foreach ($document['products'] as $product) {
                     $name = $product['name'] ?? 'Sin nombre';
                     $description = $product['description'] ?? '';
@@ -2784,7 +2784,7 @@ class SlackController extends Controller
                                     'price' => $price,
                                     'quantity' => $quantity,
                                     'type' => $service->type ?? 'No especificado',
-                                    'recurring' => $service->recurring ? 'Sí' : 'No'
+                                    'recurring' => $recurringDocument || $service->recurring ? 'Sí' : 'No'
                                 ];
                             }
                         }

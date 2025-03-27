@@ -26,7 +26,7 @@ class DocumentsHoldedController extends HoldedController
         }
 
         if ($contactId) {
-            $params['contact'] = $contactId;
+            $params['contactid'] = $contactId;
         }
 
         $url = $this->buildUrl($endpoint, $params);
