@@ -37,6 +37,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('task:upcomming today C08GS9MT8N8')->weekdays()->at('08:00');
         $schedule->command('task:upcomming tomorrow C08HA45TP1T')->weekdays()->at('15:00');
 
+        //::::::::::::::::::::::::::    CHANGES REPORT    :::::::::::::::::::::::::::::::::::::::::://
+        $schedule->command('report:date-changes C08L6EHV204 0')->weekdays()->at('18:30');
+        $schedule->command('report:date-changes C08L6EHV204 7')->sundays()->at('18:30');
+        $schedule->command('report:date-changes C08L6EHV204 31')->lastDayOfMonth()->at('18:30');
     }
 
     /**

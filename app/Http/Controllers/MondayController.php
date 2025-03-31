@@ -15,7 +15,7 @@ class MondayController extends Controller
     protected $mondayClient;
     protected $boardService;
     protected $groupService;
-    protected $itemService;
+    public $itemService;
     protected $userService;
     protected $timeTrackingService;
     protected $limit = 25;

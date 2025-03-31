@@ -153,4 +153,38 @@ class ItemService
 
         return $this->client->query($query);
     }
+
+    /**
+     * Método para obtener un item por su id
+     * @param string $itemId
+     * @return array
+     */
+    public function getItemById(string $itemId): array
+    {
+        $query = <<<GRAPHQL
+        {
+            items(ids: ["$itemId"]) {
+                id
+                name
+                url
+                updated_at
+                board{
+                    id
+                    name
+                    url
+                }
+                column_values {
+                    id
+                    column {
+                        title
+                    }
+                    type
+                    text
+                }
+            }
+        }
+        GRAPHQL;
+
+        return $this->client->query($query);
+    }
 }
