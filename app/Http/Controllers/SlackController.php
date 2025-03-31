@@ -2784,7 +2784,7 @@ class SlackController extends Controller
      */
     public function handleInteractiveAction(Request $request)
     {
-        Log::info('Slack interactive payload received', ['payload' => $request->all()]);
+        Log::info('Slack interactive payload received', $request->all());
 
         $payload = json_decode($request->input('payload'), true);
 
@@ -2816,12 +2816,12 @@ class SlackController extends Controller
                     if ($event) {
                         $additionalData = json_decode($event->additional_data, true) ?: [];
                         $additionalData['reason'] = $userInput;
+                        $event->status = "completed";
                         $event->additional_data = json_encode($additionalData);
                         $event->save();
 
                         // Responder a la acción del usuario
                         return response()->json([
-                            'response_type' => 'ephemeral',
                             'replace_original' => true,
                             'text' => "¡Gracias! El motivo del cambio de fecha ha sido registrado."
                         ]);

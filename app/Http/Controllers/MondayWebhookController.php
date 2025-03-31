@@ -56,7 +56,7 @@ class MondayWebhookController extends Controller
         }
 
         // Verificar si es un cambio de valor de columna
-        if ($event['type'] === 'change_column_value') {
+        if ($event['type'] === 'update_column_value') {
             return $this->handleDateColumnChange($request);
         }
 
@@ -91,8 +91,7 @@ class MondayWebhookController extends Controller
         $boardId = $event['boardId'];
         $pulseId = $event['pulseId'];
         $userId = $event['userId'];
-        $newValue = $event['value'];
-
+        $newValue = $event['value']['date'];
         // Verificar si la columna es de tipo fecha
         if (!$this->isDateColumn($boardId, $columnId)) {
             return response()->json(['status' => 'ignored', 'message' => 'Not a date column']);
@@ -116,6 +115,8 @@ class MondayWebhookController extends Controller
             'description' => "Usuario {$user['name']} cambió la fecha en el ítem {$itemInfo->name}",
             'start_date' => now(),
             'source' => 'monday',
+            'status' => 'ongoing',
+            'category' => 'change_date',
             'external_id' => "{$boardId}_{$pulseId}_{$columnId}",
             'additional_data' => json_encode([
                 'board_id' => $boardId,
@@ -164,15 +165,29 @@ class MondayWebhookController extends Controller
     private function getItemInfo($boardId, $pulseId)
     {
         // Consultar información del item a través de la API de Monday
-        $query = "query { items(ids: [{$pulseId}]) { name board { id name } } }";
+        $query = <<<GRAPHQL
+            {
+                items (ids: ["$pulseId"]) {
+                    name
+                    url
+                    board {
+                        id
+                        url
+                        name
+                    }
+                }
+            }
+        GRAPHQL;
         $response = $this->mondayClient->query($query);
+        if (isset($response[0]['data']['items'][0])) {
+            $item = $response[0]['data']['items'][0];
 
-        if (isset($response['data']['items'][0])) {
-            $item = $response['data']['items'][0];
             return (object)[
                 'name' => $item['name'],
+                'item_url' => $item['url'],
                 'board_name' => $item['board']['name'],
                 'board_id' => $item['board']['id'],
+                'board_url' => $item['board']['url'],
             ];
         }
 
@@ -209,7 +224,7 @@ class MondayWebhookController extends Controller
                 "type" => "section",
                 "text" => [
                     "type" => "mrkdwn",
-                    "text" => "Has cambiado una fecha en el ítem *{$itemInfo->name}* en el tablero *{$itemInfo->board_name}*."
+                    "text" => "Has cambiado una fecha en el ítem *<$itemInfo->item_url|$itemInfo->name>* en el tablero *<$itemInfo->board_url|$itemInfo->board_name>*."
                 ]
             ],
             [
