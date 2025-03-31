@@ -70,7 +70,7 @@ Route::prefix('monday')->middleware('auth:sanctum')->group(function () {
 
 // Monday Webhooks - Rutas más específicas
 Route::get('/webhook/monday/date-change', [MondayWebhookController::class, 'verifyWebhook']);
-Route::post('/webhook/monday/date-change', [MondayWebhookController::class, 'verifyWebhook']);
+Route::post('/webhook/monday/date-change', [MondayWebhookController::class, 'handleDateChangeWebhook']);
 
 // Slack Interactive Components
 Route::post('/slack/interactive', [SlackController::class, 'handleInteractiveAction']);
