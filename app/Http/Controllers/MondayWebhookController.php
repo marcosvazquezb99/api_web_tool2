@@ -22,6 +22,48 @@ class MondayWebhookController extends Controller
     }
 
     /**
+     * Verificar el webhook cuando Monday.com lo configura por primera vez
+     * Implementa el "challenge" que Monday envía para verificar la URL
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function verifyWebhook(Request $request)
+    {
+        Log::info('Monday Webhook verification', ['params' => $request->all()]);
+
+        // Monday envía un parámetro "challenge" en la solicitud GET de verificación
+        if ($request->has('challenge')) {
+            // Devolver el mismo valor de "challenge" para verificar el webhook
+            return response()->json(['challenge' => $request->input('challenge')]);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'No challenge provided'], 400);
+    }
+
+    /**
+     * Manejar las notificaciones de cambios de fecha entrantes de Monday
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function handleDateChangeWebhook(Request $request)
+    {
+        Log::info('Monday Date Change Webhook received', ['payload' => $request->all()]);
+
+        // Verificar el tipo de evento
+        $event = $request->input('event');
+        if (!$event || !isset($event['type'])) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid event data'], 400);
+        }
+
+        // Verificar si es un cambio de valor de columna
+        if ($event['type'] === 'change_column_value') {
+            return $this->handleDateColumnChange($request);
+        }
+
+        return response()->json(['status' => 'ignored', 'message' => 'Event type not supported for date change webhook']);
+    }
+
+    /**
      * Manejar las notificaciones entrantes de Monday
      */
     public function handleWebhook(Request $request)
@@ -39,6 +81,8 @@ class MondayWebhookController extends Controller
 
     /**
      * Manejar cambios específicos en columnas de fecha
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     private function handleDateColumnChange(Request $request)
     {
@@ -92,14 +136,26 @@ class MondayWebhookController extends Controller
 
     /**
      * Verificar si la columna es de tipo fecha
+     * @param string $boardId
+     * @param string $columnId
+     * @return bool
      */
     private function isDateColumn($boardId, $columnId)
     {
-        // En una implementación completa, aquí consultaríamos a Monday
-        // Para simplificar, podemos verificar si el ID de la columna contiene 'date' o tiene un formato específico
+        // Consultar las columnas del tablero para verificar si es de tipo fecha
+        $query = "query { boards(ids: [{$boardId}]) { columns { id, type } } }";
+        $response = $this->mondayClient->query($query);
 
-        // Para propósitos de demostración, asumimos que es una columna de fecha
-        return true;
+        if (isset($response['data']['boards'][0]['columns'])) {
+            foreach ($response['data']['boards'][0]['columns'] as $column) {
+                if ($column['id'] === $columnId && ($column['type'] === 'date' || $column['type'] === 'timeline')) {
+                    return true;
+                }
+            }
+        }
+
+        // Fallback: verificar si el ID de la columna contiene 'date'
+        return (stripos($columnId, 'date') !== false);
     }
 
     /**

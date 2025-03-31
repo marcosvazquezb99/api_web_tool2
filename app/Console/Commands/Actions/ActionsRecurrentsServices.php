@@ -106,7 +106,7 @@ class ActionsRecurrentsServices extends Command
                 switch ($type_service) {
                     case 'redessociales':
                         $this->processSocialMediaService($contact, $contact_internal_id, $contact_name, $now, $rrssColumnDateId, $rrssColumnStimatedDateId);
-                        // dd('RRSS');
+//                        dd('RRSS');
                         break;
                 }
             }
@@ -178,7 +178,8 @@ class ActionsRecurrentsServices extends Command
         }
 
         // Create new month group
-        $nextMonth = $now->copy()->addMonth();
+        $nextMonth = $now->copy()->firstOfMonth()->addMonth();
+//        dd($nextMonth);
         $groupName = "{$contact->internal_id}_{$nextMonth->translatedFormat('F Y')}";
         $response = $mondayController->createGroup($mondayBoard->id, $groupName);
         if (!isset($response[0]['data']['create_group']['id'])) {
@@ -203,7 +204,7 @@ class ActionsRecurrentsServices extends Command
 
         // Process and move each item
         foreach ($items as $item) {
-            $this->moveAndUpdateItem($mondayController, $item, $mondayBoard->id, $destinationGroupId, $estimatedDateColumnId, $dateColumnId, $now);
+            $this->moveAndUpdateItem($mondayController, $item, $mondayBoard->id, $destinationGroupId, $estimatedDateColumnId, $dateColumnId, $nextMonth);
         }
 
         // Cleanup: delete the temporary duplicated group
@@ -219,10 +220,10 @@ class ActionsRecurrentsServices extends Command
      * @param string $groupId
      * @param string $estimatedDateColumnId
      * @param string $dateColumnId
-     * @param Carbon $now
+     * @param Carbon $referencedStimatedDate
      * @return void
      */
-    private function moveAndUpdateItem($mondayController, $item, $boardId, $groupId, $estimatedDateColumnId, $dateColumnId, $now)
+    private function moveAndUpdateItem($mondayController, $item, $boardId, $groupId, $estimatedDateColumnId, $dateColumnId, $referencedStimatedDate)
     {
         foreach ($item['column_values'] as $column) {
             if ($column['id'] == $estimatedDateColumnId) {
@@ -245,7 +246,7 @@ class ActionsRecurrentsServices extends Command
                             $day = random_int(trim($day[0]), trim($day[1]));
                             //$day = $day[2];
                         }
-                        $dateStimated = Carbon::createFromDate($now->year, $now->month, $day);
+                        $dateStimated = Carbon::createFromDate($referencedStimatedDate->year, $referencedStimatedDate->month, $day);
 
                         // Check if date is a holiday or weekend, and adjust if necessary
                         $dateStimated = $this->holidayChecker->getNextBusinessDay($dateStimated);

@@ -68,8 +68,11 @@ Route::prefix('monday')->middleware('auth:sanctum')->group(function () {
 
 });
 
-// Monday Webhook para cambios en columnas de fecha
-Route::post('/webhook/monday', [MondayWebhookController::class, 'handleWebhook']);
+// Monday Webhooks - Rutas más específicas
+Route::get('/webhook/monday/date-change', [MondayWebhookController::class, 'verifyWebhook']);
+Route::post('/webhook/monday/date-change', [MondayWebhookController::class, 'handleDateChangeWebhook']);
+
+// Slack Interactive Components
 Route::post('/slack/interactive', [SlackController::class, 'handleInteractiveAction']);
 
 // Ruta para revocar un token específico
