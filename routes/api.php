@@ -8,6 +8,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\FormsController;
 use App\Http\Controllers\MondayController;
+use App\Http\Controllers\MondayWebhookController;
 use App\Http\Controllers\PlansController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\ServiceController;
@@ -66,6 +67,10 @@ Route::prefix('monday')->middleware('auth:sanctum')->group(function () {
     Route::get('boards/by_name/{boardName}', [MondayController::class, 'getFindBoardIdByName']);
 
 });
+
+// Monday Webhook para cambios en columnas de fecha
+Route::post('/webhook/monday', [MondayWebhookController::class, 'handleWebhook']);
+Route::post('/slack/interactive', [SlackController::class, 'handleInteractiveAction']);
 
 // Ruta para revocar un token específico
 Route::middleware('auth:sanctum')->delete('/revoke-token/{tokenId}', [TokenController::class, 'revokeToken']);

@@ -143,7 +143,7 @@ class ActionsRecurrentsServices extends Command
         // Get all template groups and find matching one
         $response = $mondayController->getGroupsOfBoard($template->id);
         $responseData = $response->getData(true);
-//        dd($responseData);
+
         $groups = $responseData[0]['groups'];
         $groupId = null;
         $defaultGroupId = null;

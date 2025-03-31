@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SlackController extends Controller
 {
@@ -1192,29 +1194,27 @@ class SlackController extends Controller
         return response()->json(json_decode($response->getBody(), true));
     }
 
-    public function chat_post_message(string $channel, string $message)
+    public function chat_post_message(string $channel, ?string $message = null, array $options = [])
     {
+        $payload = [
+            'channel' => $channel,
+            'link_names' => 1,
+        ];
+
+        if ($message) {
+            $payload['text'] = $message;
+        }
+
+        // Añadir opciones adicionales como bloques
+        foreach ($options as $key => $value) {
+            $payload[$key] = $value;
+        }
+
         $response = $this->client->post($this->url . '/chat.postMessage', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->slackToken
             ],
-            'json' => [
-                'channel' => $channel,
-                /*'as_user' => $request->input('as_user'),
-                'attachments' => $request->input('attachments'),
-                'blocks' => $request->input('blocks'),
-                'icon_emoji' => $request->input('icon_emoji'),
-                'icon_url' => $request->input('icon_url'),*/
-                'link_names' => 1,
-                /*'mrkdwn' => $request->input('mrkdwn'),
-                'parse' => $request->input('parse'),
-                'reply_broadcast' => $request->input('reply_broadcast'),*/
-                'text' => $message/*,
-                'thread_ts' => $request->input('thread_ts'),
-                'unfurl_links' => $request->input('unfurl_links'),
-                'unfurl_media' => $request->input('unfurl_media'),
-                'username' => $request->input('username')*/
-            ]
+            'json' => $payload
         ]);
 
         return $response->getStatusCode();
@@ -2777,5 +2777,59 @@ class SlackController extends Controller
             'response_type' => 'ephemeral',
             'text' => $combinedResponse
         ]);
+    }
+
+    /**
+     * Manejar interacciones con bloques de Slack
+     */
+    public function handleInteractiveAction(Request $request)
+    {
+        Log::info('Slack interactive payload received', ['payload' => $request->all()]);
+
+        $payload = json_decode($request->input('payload'), true);
+
+        if (!$payload || !isset($payload['type']) || $payload['type'] !== 'block_actions') {
+            return response()->json(['status' => 'error', 'message' => 'Invalid payload']);
+        }
+
+        foreach ($payload['actions'] as $action) {
+            if ($action['action_id'] === 'submit_date_change_reason') {
+                $eventId = $action['value'];
+                $userInput = null;
+
+                // Buscar el input del usuario
+                foreach ($payload['state']['values'] as $blockId => $blockValues) {
+                    if ($blockId === 'reason_block') {
+                        foreach ($blockValues as $actionId => $actionValues) {
+                            if ($actionId === 'reason_input') {
+                                $userInput = $actionValues['value'];
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if ($userInput) {
+                    // Actualizar el evento en la base de datos con el motivo
+                    $event = Event::find($eventId);
+                    if ($event) {
+                        $additionalData = json_decode($event->additional_data, true) ?: [];
+                        $additionalData['reason'] = $userInput;
+                        $event->additional_data = json_encode($additionalData);
+                        $event->save();
+
+                        // Responder a la acción del usuario
+                        return response()->json([
+                            'response_type' => 'ephemeral',
+                            'replace_original' => true,
+                            'text' => "¡Gracias! El motivo del cambio de fecha ha sido registrado."
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Action not handled']);
     }
 }
