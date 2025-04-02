@@ -12,13 +12,13 @@ use Illuminate\Http\Request;
 
 class MondayController extends Controller
 {
-    protected $mondayClient;
-    protected $boardService;
-    protected $groupService;
-    public $itemService;
-    protected $userService;
-    protected $timeTrackingService;
-    protected $limit = 25;
+    protected MondayClient $mondayClient;
+    protected BoardService $boardService;
+    protected GroupService $groupService;
+    public ItemService $itemService;
+    protected UserService $userService;
+    protected TimeTrackingService $timeTrackingService;
+    protected int $limit = 25;
 
     public function __construct()
     {
@@ -79,23 +79,31 @@ class MondayController extends Controller
     /**
      * Método para obtener los elementos (items) de un grupo específico
      */
-    public function getItemsOfGroup($boardId, $groupId, $cursor = null, $limit = null)
+    public function getItemsOfGroup($boardId, $groupId, $cursor = null, $limit = null): array
     {
         return $this->itemService->getItemsOfGroup($boardId, $groupId, $cursor, $limit);
     }
 
     /**
      * Método para obtener los elementos (items) de un tablero específico
+     * @param string $boardId
+     * @param string|null $columns
+     * @param string|null $cursor
+     * @param null $limit
+     * @param array $rules
+     * @return array
      */
-    public function getItemsByBoard($boardId, $columns = null, $cursor = null, $limit = null, $rules = [])
+    public function getItemsByBoard(string $boardId, string $columns = null, $cursor = null, $limit = null, $rules = []): array
     {
         return $this->itemService->getItemsByBoard($boardId, $columns, $cursor, $limit, $rules);
     }
 
     /**
      * Método para duplicar un tablero en monday.com
+     * @param Request $request
+     * @return array
      */
-    public function duplicateBoard(Request $request)
+    public function duplicateBoard(Request $request): array
     {
         $boardId = $request->input('boardId');
         $boardName = $request->input('boardName');
@@ -105,8 +113,10 @@ class MondayController extends Controller
 
     /**
      * Método para duplicar un grupo de un tablero
+     * @param Request $request
+     * @return array
      */
-    public function duplicateGroupRequest(Request $request)
+    public function duplicateGroupRequest(Request $request): array
     {
         $boardId = $request->input('boardId');
         $groupId = $request->input('groupId');
@@ -116,48 +126,118 @@ class MondayController extends Controller
 
     /**
      * Método para duplicar un grupo de un tablero
+     * @param string $boardId
+     * @param string $groupId
+     * @param bool $addToTop
+     * @return array
      */
-    public function duplicateGroup(string $boardId, string $groupId, bool $addToTop = true)
+    public function duplicateGroup(string $boardId, string $groupId, bool $addToTop = true): array
     {
         return $this->groupService->duplicateGroup($boardId, $groupId, $addToTop);
     }
 
     /**
      * Método para actualizar el título de un grupo
+     * @param string $boardId
+     * @param string $groupId
+     * @param string $title
+     * @return array
      */
-    public function updateGroupTitle(string $boardId, string $groupId, string $title)
+    public function updateGroupTitle(string $boardId, string $groupId, string $title): array
     {
         return $this->groupService->updateGroupTitle($boardId, $groupId, $title);
     }
 
     /**
      * Método para crear un grupo en un tablero
+     * @param string $boardId
+     * @param string $name
+     * @return array
      */
-    public function createGroup(string $boardId, string $name)
+    public function createGroup(string $boardId, string $name): array
     {
         return $this->groupService->createGroup($boardId, $name);
     }
 
     /**
      * Método para eliminar un grupo de un tablero
+     * @param string $boardId
+     * @param string $groupId
+     * @return array
      */
-    public function deleteGroup(string $boardId, string $groupId)
+    public function deleteGroup(string $boardId, string $groupId): array
     {
         return $this->groupService->deleteGroup($boardId, $groupId);
     }
 
     /**
-     * Método para cambiar el valor de la columna de un item
+     * Método para duplicar un item en un tablero
+     * @param string $boardId
+     * @param string $itemId
+     * @param string|null $groupId
+     * @return array
      */
-    public function changeColumnValue(string $boardId, string $itemId, string $columnId, string $value)
+    public function duplicateItem(string $boardId, string $itemId, string $groupId = null): array
+    {
+        return $this->itemService->duplicateItem($boardId, $itemId, $groupId);
+    }
+
+    /**
+     * Método para crear un item en un tablero
+     * @param string $boardId
+     * @param string $groupId
+     * @param string $itemName
+     * @param array $columnValues
+     * @return array
+     */
+    public function createItem(string $boardId, string $groupId, string $itemName, array $columnValues = []): array
+    {
+        return $this->itemService->createItem($boardId, $groupId, $itemName, $columnValues);
+    }
+
+    /**
+     * Método para eliminar un item de un tablero
+     * @param string $boardId
+     * @param string $itemId
+     * @return array
+     */
+    public function deleteItem(string $boardId, string $itemId): array
+    {
+        return $this->itemService->deleteItem($boardId, $itemId);
+    }
+
+    /**
+     * Método para obtener la información de un item por su id
+     * @param string $itemId
+     * @return array
+     */
+    public function getItemById(string $itemId): array
+    {
+        return $this->itemService->getItemById($itemId);
+    }
+
+
+    /**
+     * Método para cambiar el valor de la columna de un item
+     * @param string $boardId
+     * @param string $itemId
+     * @param string $columnId
+     * @param string $value
+     * @return array
+     */
+    public function changeColumnValue(string $boardId, string $itemId, string $columnId, string $value): array
     {
         return $this->itemService->changeColumnValue($boardId, $itemId, $columnId, $value);
     }
 
     /**
      * Método para mover un item de un tablero a otro
+     * @param string $boardId
+     * @param string $groupId
+     * @param string $itemId
+     * @return array
      */
-    public function moveItemToBoard(string $boardId, string $groupId, string $itemId)
+    public function moveItemToBoard(string $boardId, string $groupId, string $itemId): array
     {
         return $this->itemService->moveItemToBoard($boardId, $groupId, $itemId);
     }

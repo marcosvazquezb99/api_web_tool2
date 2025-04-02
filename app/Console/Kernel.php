@@ -39,8 +39,8 @@ class Kernel extends ConsoleKernel
 
         //::::::::::::::::::::::::::    CHANGES REPORT    :::::::::::::::::::::::::::::::::::::::::://
         $schedule->command('report:date-changes C08L6EHV204 0')->weekdays()->at('18:30');
-        $schedule->command('report:date-changes C08L6EHV204 7')->sundays()->at('18:30');
-        $schedule->command('report:date-changes C08L6EHV204 31')->lastDayOfMonth()->at('18:30');
+        $schedule->command('report:date-changes C08L6EHV204 7')->mondays()->at('05:00');
+        $schedule->command('report:date-changes C08L6EHV204 31')->lastDayOfMonth()->at('05:00');
     }
 
     /**

@@ -91,7 +91,8 @@ class MondayWebhookController extends Controller
         $boardId = $event['boardId'];
         $pulseId = $event['pulseId'];
         $userId = $event['userId'];
-        $newValue = $event['value']['date'];
+        $newValue = $event['value']['date'] ?? '';
+        $previousValue = $event['previousValue']['date'] ?? '';
         // Verificar si la columna es de tipo fecha
         if (!$this->isDateColumn($boardId, $columnId)) {
             return response()->json(['status' => 'ignored', 'message' => 'Not a date column']);
@@ -124,13 +125,14 @@ class MondayWebhookController extends Controller
                 'column_id' => $columnId,
                 'user_id' => $userId,
                 'new_value' => $newValue,
+                'previous_value' => $previousValue,
                 'item_name' => $itemInfo->name,
                 'board_name' => $itemInfo->board_name,
             ])
         ]);
 
         // Enviar notificación a Slack
-        $this->sendSlackNotification($user, $itemInfo, $newValue, $eventRecord->id);
+        $this->sendSlackNotification($user, $itemInfo, $newValue, $eventRecord->id, $previousValue);
 
         return response()->json(['status' => 'success', 'message' => 'Date change processed']);
     }
@@ -197,7 +199,7 @@ class MondayWebhookController extends Controller
     /**
      * Enviar notificación a Slack con bloques interactivos
      */
-    private function sendSlackNotification($user, $itemInfo, $newValue, $eventId)
+    private function sendSlackNotification($user, $itemInfo, $newValue, $eventId, $previousValue)
     {
         // Buscar el ID de Slack del usuario
         $slackUserId = $this->findSlackUserId($user['email']);
@@ -208,7 +210,18 @@ class MondayWebhookController extends Controller
         }
 
         // Formatear la fecha para mostrarla
-        $formattedDate = date('Y-m-d', strtotime($newValue));
+        if ($newValue != '') {
+            $newValue = date('d-m-Y', strtotime($newValue));
+        } else {
+            $newValue = 'Sin especificar';
+        }
+
+        if ($previousValue != '') {
+            $previousValue = date('d-m-Y', strtotime($previousValue));
+        } else {
+            $previousValue = 'Sin especificar';
+        }
+
 
         // Crear los bloques para el mensaje de Slack
         $blocks = [
@@ -232,7 +245,7 @@ class MondayWebhookController extends Controller
                 "fields" => [
                     [
                         "type" => "mrkdwn",
-                        "text" => "*Nueva fecha:*\n{$formattedDate}"
+                        "text" => "*Nueva fecha:* $newValue} \n*Fecha anterior:* $previousValue"
                     ]
                 ]
             ],

@@ -118,8 +118,9 @@ class changeDateReport extends Command
 
                 $itemName = $itemInfo && isset($itemInfo->name) ? $itemInfo->name : "Item ID: $itemId";
 
-                // Format date
-                $dateChanged = $event->created_at->format('Y-m-d H:i:s');
+                $newValue = $additionalData['new_value'] ?? null;
+
+
 
                 // Get user who made the change
                 $userInfo = null;
@@ -135,7 +136,7 @@ class changeDateReport extends Command
 
                 // Add to report
                 $report .= "• Task: *<$itemInfo->url|$itemName>*\n";
-                $report .= "  Changed by: *$userName* on $dateChanged\n";
+                $report .= "  Changed by: *$userName* to $newValue\n";
                 $report .= "  Reason: _\"$reason\"_\n\n";
             }
 

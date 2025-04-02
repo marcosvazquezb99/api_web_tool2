@@ -121,6 +121,28 @@ class HolidayCheckerAction
     }
 
     /**
+     * Get the previous business day if date is a weekend or holiday
+     *
+     * @param Carbon|string $date The date to check
+     * @return Carbon
+     */
+    public function getPreviousBusinessDay($date)
+    {
+        if (!$date instanceof Carbon) {
+            $date = Carbon::parse($date);
+        }
+
+        $prevDay = $date->copy();
+
+        // Keep going back until we find a business day
+        while ($prevDay->isWeekend() || $this->isHoliday($prevDay)) {
+            $prevDay->subDay();
+        }
+
+        return $prevDay;
+    }
+
+    /**
      * Set the country code
      *
      * @param string $countryCode
