@@ -15,6 +15,7 @@ class Client extends Model
         'phone',
         'internal_id',
         'holded_id',
+        'business_name',
     ];
     protected $primaryKey = 'client_id';
 

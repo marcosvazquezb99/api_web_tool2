@@ -65,7 +65,7 @@ class SyncHoldedCustomers extends Command
         $updated = 0;
         $created = 0;
         $errors = 0;
-
+        // dd($clients);
         foreach ($clients as $contact) {
             $contact_internal_id = $this->getCustomFieldValue($contact, 'client_id');
 
@@ -74,6 +74,7 @@ class SyncHoldedCustomers extends Command
                     ['holded_id' => $contact['id']],
                     [
                         'name' => $contact['name'],
+                        'business_name' => is_null($contact['tradeName']) || $contact['tradeName'] == 0 ? $contact['name'] : $contact['tradeName'],
                         'email' => $contact['email'],
                         'internal_id' => $contact_internal_id,
                     ]
