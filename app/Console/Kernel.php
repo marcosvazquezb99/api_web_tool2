@@ -43,7 +43,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('report:date-changes C08L6EHV204 31')->lastDayOfMonth()->at('05:00');
 
         // Process web project creation events every minute
-        $schedule->command('events:process-web-projects')->everyMinute();
+        $schedule->command('events:process-web-projects')->everyMinute()->withoutOverlapping();
     }
 
     /**

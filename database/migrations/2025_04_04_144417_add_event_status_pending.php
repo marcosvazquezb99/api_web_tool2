@@ -21,7 +21,7 @@ class AddEventStatusPending extends Migration
 
         // Add 'Pending' if it doesn't already exist
         if (!in_array('pending', $currentValues)) {
-            $currentValues[] = 'ending';
+            $currentValues[] = 'pending';
         }
 
         // Format the values for the SQL query
