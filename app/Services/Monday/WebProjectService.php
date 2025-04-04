@@ -116,7 +116,7 @@ class WebProjectService
     {
         try {
             // 1. Duplicate the template board
-            $duplicateResponse = $this->boardService->duplicateBoard($this->templateBoardId, $projectName);
+            $duplicateResponse = $this->boardService->duplicateBoard($this->templateBoardId, $projectName)[0];
 
             if (isset($duplicateResponse['data']['duplicate_board']['board']['id'])) {
                 $newBoardId = $duplicateResponse['data']['duplicate_board']['board']['id'];
@@ -161,7 +161,7 @@ class WebProjectService
                 $itemsResponse = $this->itemService->getItemsByBoard($newBoardId);
 
                 if ($itemsResponse['status'] === 200) {
-                    $items = $itemsResponse['data']['data']['boards'][0]['items_page']['items'];
+                    $items = $itemsResponse[0]['data']['boards'][0]['items_page']['items'];
 
                     // Process each item
                     foreach ($items as $item) {

@@ -3009,85 +3009,40 @@ class SlackController extends Controller
         try {
             $privateMetadata = json_decode($payload['view']['private_metadata'], true);
             $channelId = $privateMetadata['channel_id'] ?? null;
+            $userId = $payload['user']['id'] ?? null;
 
-            $values = $payload['view']['state']['values'];
+            // Store the entire payload in the events table for processing later
+            $event = new Event();
+            $event->source = 'slack';
+            $event->category = 'web_project_creation';
+            $event->status = 'pending';
+            $event->external_id = 'slack_' . ($payload['view']['id'] ?? uniqid());
 
-            // Extract form data
-            $projectName = $values['project_name']['project_name_input']['value'];
-            $projectType = $values['project_type']['project_type_input']['selected_option']['value'];
+            // Store necessary data for processing
+            $additionalData = [
+                'payload' => $payload,
+                'channel_id' => $channelId,
+                'user_id' => $userId,
+                'timestamp' => time()
+            ];
 
-            // Extract phase dates
-            $phases = [];
-            foreach ($values as $blockId => $blockValues) {
-                if (strpos($blockId, 'phase_') === 0) {
-                    $parts = explode('_', $blockId);
-                    if (count($parts) >= 3) {
-                        $phaseId = $parts[1];
-                        $dateType = $parts[2]; // start or end
+            $event->additional_data = json_encode($additionalData);
+            $event->save();
 
-                        if (!isset($phases[$phaseId])) {
-                            $phases[$phaseId] = [];
-                        }
-
-                        $actionId = "{$blockId}_input";
-                        $dateValue = $blockValues[$actionId]['selected_date'] ?? null;
-                        $phases[$phaseId][$dateType] = $dateValue;
-                    }
-                }
+            // Send an immediate acknowledgment to the user
+            if ($channelId) {
+                $this->chat_post_message($channelId, "Tu solicitud de creación de proyecto web está siendo procesada. Te notificaremos cuando esté lista. ID: {$event->id}");
             }
 
-            // Extract team assignments
-            $teamAssignments = [];
-            foreach ($values as $blockId => $blockValues) {
-                if (strpos($blockId, 'team_') === 0) {
-                    $team = str_replace('team_', '', $blockId);
-                    $team = str_replace('_', ' ', $team);
+            return response()->json(['response_action' => 'clear']);
 
-                    $actionId = "{$blockId}_input";
-                    $userId = $blockValues[$actionId]['selected_option']['value'] ?? null;
-
-                    if ($userId) {
-                        $teamAssignments[$team] = $userId;
-                    }
-                }
-            }
-
-            // Create the project in Monday.com
-            $webProjectService = new WebProjectService();
-            $result = $webProjectService->createWebProject(
-                $projectName,
-                $projectType,
-                $phases,
-                $teamAssignments
-            );
-
-            if ($result['success']) {
-                // Send a message to the channel with the result
-                $boardUrl = $result['board_url'] ?? '';
-                $successMessage = "✅ Proyecto web *{$projectName}* creado correctamente.\n";
-                $successMessage .= $boardUrl ? "🔗 <{$boardUrl}|Ver tablero en Monday.com>" : "";
-
-                $this->chat_post_message($channelId, $successMessage);
-
-                return response()->json(['response_action' => 'clear']);
-            } else {
-                // Return an error
-                Log::error('Failed to create web project', ['error' => $result['error']]);
-
-                return response()->json([
-                    'response_action' => 'errors',
-                    'errors' => [
-                        'project_name' => 'Error al crear el proyecto: ' . $result['error']
-                    ]
-                ]);
-            }
         } catch (\Exception $e) {
             Log::error('Exception in web project submission', ['exception' => $e->getMessage()]);
 
             return response()->json([
                 'response_action' => 'errors',
                 'errors' => [
-                    'project_name' => 'Error interno del servidor: ' . $e->getMessage()
+                    'project_name' => 'Error al procesar la solicitud: ' . $e->getMessage()
                 ]
             ]);
         }
