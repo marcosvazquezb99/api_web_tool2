@@ -30,7 +30,7 @@ class WebProjectService
         $boardId = $boardId ?? $this->templateBoardId;
 
         try {
-            $response = $this->groupService->getGroupsOfBoard($boardId);
+            $response = $this->groupService->getGroupsOfBoard($boardId)[0];
 
             if (isset($response['data']['boards'][0]['groups'])) {
                 return $response['data']['boards'][0]['groups'];

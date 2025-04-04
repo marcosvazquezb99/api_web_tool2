@@ -2785,53 +2785,312 @@ class SlackController extends Controller
      */
     public function handleInteractiveAction(Request $request)
     {
-        Log::info('Slack interactive payload received', $request->all());
+        if (!$this->isValidSlackRequest($request)) {
+            return response('Unauthorized', 401);
+        }
+
+        Log::info('Slack interactive payload received', ['payload' => $request->input('payload')]);
 
         $payload = json_decode($request->input('payload'), true);
 
-        if (!$payload || !isset($payload['type']) || $payload['type'] !== 'block_actions') {
+        if (!$payload || !isset($payload['type'])) {
             return response()->json(['status' => 'error', 'message' => 'Invalid payload']);
         }
 
-        foreach ($payload['actions'] as $action) {
-            if ($action['action_id'] === 'submit_date_change_reason') {
-                $eventId = $action['value'];
-                $userInput = null;
+        // Handle different interaction types
+        switch ($payload['type']) {
+            case 'block_actions':
+                return $this->handleBlockActions($payload);
 
-                // Buscar el input del usuario
-                foreach ($payload['state']['values'] as $blockId => $blockValues) {
-                    if ($blockId === 'reason_block') {
-                        foreach ($blockValues as $actionId => $actionValues) {
-                            if ($actionId === 'reason_input') {
-                                $userInput = $actionValues['value'];
-                                break;
-                            }
-                        }
+            case 'view_submission':
+                return $this->handleViewSubmission($payload);
+
+            case 'message_action':
+                return $this->handleMessageAction($payload);
+
+            case 'shortcut':
+                return $this->handleShortcut($payload);
+
+            case 'dialog_submission':
+                return $this->handleDialogSubmission($payload);
+
+            default:
+                Log::warning('Unhandled Slack interaction type', ['type' => $payload['type']]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled interaction type']);
+        }
+    }
+
+    /**
+     * Handle block actions (buttons, selects, etc.)
+     */
+    protected function handleBlockActions($payload)
+    {
+        // Early return if no actions
+        if (empty($payload['actions'])) {
+            return response()->json(['status' => 'error', 'message' => 'No actions found']);
+        }
+
+        // Get the first action - it's the one that triggered the request
+        $action = $payload['actions'][0];
+        $actionId = $action['action_id'];
+
+        // Route to specific handlers based on action_id
+        switch (true) {
+            case $actionId === 'submit_date_change_reason':
+                return $this->handleDateChangeReason($payload, $action);
+
+            case strpos($actionId, 'approve_') === 0:
+                return $this->handleApprovalAction($payload, $action);
+
+            case strpos($actionId, 'reject_') === 0:
+                return $this->handleRejectionAction($payload, $action);
+
+            // Add more cases as needed for different action types
+
+            default:
+                Log::warning('Unhandled block action', ['action_id' => $actionId]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled action type']);
+        }
+    }
+
+    /**
+     * Handle view submissions (modal form submissions)
+     */
+    protected function handleViewSubmission($payload)
+    {
+        $callbackId = $payload['view']['callback_id'];
+
+        switch ($callbackId) {
+            case 'web_project_modal':
+                return $this->handleWebProjectModalSubmit($payload);
+
+            // Add more cases as needed for different modal submissions
+
+            default:
+                Log::warning('Unhandled view submission', ['callback_id' => $callbackId]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled view submission']);
+        }
+    }
+
+    /**
+     * Handle message actions (actions from message context menus)
+     */
+    protected function handleMessageAction($payload)
+    {
+        $callbackId = $payload['callback_id'];
+
+        switch ($callbackId) {
+            // Add cases for message actions
+
+            default:
+                Log::warning('Unhandled message action', ['callback_id' => $callbackId]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled message action']);
+        }
+    }
+
+    /**
+     * Handle shortcuts (global and message shortcuts)
+     */
+    protected function handleShortcut($payload)
+    {
+        $callbackId = $payload['callback_id'];
+
+        switch ($callbackId) {
+            // Add cases for shortcuts
+
+            default:
+                Log::warning('Unhandled shortcut', ['callback_id' => $callbackId]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled shortcut']);
+        }
+    }
+
+    /**
+     * Handle dialog submissions (legacy dialog forms)
+     */
+    protected function handleDialogSubmission($payload)
+    {
+        $callbackId = $payload['callback_id'];
+
+        switch ($callbackId) {
+            // Add cases for dialog submissions
+
+            default:
+                Log::warning('Unhandled dialog submission', ['callback_id' => $callbackId]);
+                return response()->json(['status' => 'error', 'message' => 'Unhandled dialog submission']);
+        }
+    }
+
+    /**
+     * Handle date change reason submission
+     */
+    protected function handleDateChangeReason($payload, $action)
+    {
+        $eventId = $action['value'];
+        $userInput = null;
+
+        // Buscar el input del usuario
+        foreach ($payload['state']['values'] as $blockId => $blockValues) {
+            if ($blockId === 'reason_block') {
+                foreach ($blockValues as $actionId => $actionValues) {
+                    if ($actionId === 'reason_input') {
+                        $userInput = $actionValues['value'];
                         break;
                     }
                 }
-
-                if ($userInput) {
-                    // Actualizar el evento en la base de datos con el motivo
-                    $event = Event::find($eventId);
-                    if ($event) {
-                        $additionalData = json_decode($event->additional_data, true) ?: [];
-                        $additionalData['reason'] = $userInput;
-                        $event->status = "completed";
-                        $event->additional_data = json_encode($additionalData);
-                        $event->save();
-
-                        // Responder a la acción del usuario
-                        return response()->json([
-                            'replace_original' => true,
-                            'text' => "¡Gracias! El motivo del cambio de fecha ha sido registrado."
-                        ]);
-                    }
-                }
+                break;
             }
         }
 
-        return response()->json(['status' => 'error', 'message' => 'Action not handled']);
+        if ($userInput) {
+            // Actualizar el evento en la base de datos con el motivo
+            $event = Event::find($eventId);
+            if ($event) {
+                $additionalData = json_decode($event->additional_data, true) ?: [];
+                $additionalData['reason'] = $userInput;
+                $event->status = "completed";
+                $event->additional_data = json_encode($additionalData);
+                $event->save();
+
+                // Responder a la acción del usuario
+                return response()->json([
+                    'replace_original' => true,
+                    'text' => "¡Gracias! El motivo del cambio de fecha ha sido registrado."
+                ]);
+            }
+        }
+
+        return response()->json([
+            'replace_original' => false,
+            'text' => "Error: No se pudo procesar la razón del cambio."
+        ]);
+    }
+
+    /**
+     * Handle approval actions
+     */
+    protected function handleApprovalAction($payload, $action)
+    {
+        // Extract the ID from the action_id (e.g., "approve_123" -> "123")
+        $id = substr($action['action_id'], strlen('approve_'));
+
+        Log::info('Approval action', ['id' => $id]);
+
+        // Implement approval logic here
+
+        return response()->json([
+            'replace_original' => true,
+            'text' => "✅ Solicitud aprobada."
+        ]);
+    }
+
+    /**
+     * Handle rejection actions
+     */
+    protected function handleRejectionAction($payload, $action)
+    {
+        // Extract the ID from the action_id (e.g., "reject_123" -> "123")
+        $id = substr($action['action_id'], strlen('reject_'));
+
+        Log::info('Rejection action', ['id' => $id]);
+
+        // Implement rejection logic here
+
+        return response()->json([
+            'replace_original' => true,
+            'text' => "❌ Solicitud rechazada."
+        ]);
+    }
+
+    /**
+     * Handle web project modal submission
+     */
+    protected function handleWebProjectModalSubmit($payload)
+    {
+        try {
+            $privateMetadata = json_decode($payload['view']['private_metadata'], true);
+            $channelId = $privateMetadata['channel_id'] ?? null;
+
+            $values = $payload['view']['state']['values'];
+
+            // Extract form data
+            $projectName = $values['project_name']['project_name_input']['value'];
+            $projectType = $values['project_type']['project_type_input']['selected_option']['value'];
+
+            // Extract phase dates
+            $phases = [];
+            foreach ($values as $blockId => $blockValues) {
+                if (strpos($blockId, 'phase_') === 0) {
+                    $parts = explode('_', $blockId);
+                    if (count($parts) >= 3) {
+                        $phaseId = $parts[1];
+                        $dateType = $parts[2]; // start or end
+
+                        if (!isset($phases[$phaseId])) {
+                            $phases[$phaseId] = [];
+                        }
+
+                        $actionId = "{$blockId}_input";
+                        $dateValue = $blockValues[$actionId]['selected_date'] ?? null;
+                        $phases[$phaseId][$dateType] = $dateValue;
+                    }
+                }
+            }
+
+            // Extract team assignments
+            $teamAssignments = [];
+            foreach ($values as $blockId => $blockValues) {
+                if (strpos($blockId, 'team_') === 0) {
+                    $team = str_replace('team_', '', $blockId);
+                    $team = str_replace('_', ' ', $team);
+
+                    $actionId = "{$blockId}_input";
+                    $userId = $blockValues[$actionId]['selected_option']['value'] ?? null;
+
+                    if ($userId) {
+                        $teamAssignments[$team] = $userId;
+                    }
+                }
+            }
+
+            // Create the project in Monday.com
+            $webProjectService = new WebProjectService();
+            $result = $webProjectService->createWebProject(
+                $projectName,
+                $projectType,
+                $phases,
+                $teamAssignments
+            );
+
+            if ($result['success']) {
+                // Send a message to the channel with the result
+                $boardUrl = $result['board_url'] ?? '';
+                $successMessage = "✅ Proyecto web *{$projectName}* creado correctamente.\n";
+                $successMessage .= $boardUrl ? "🔗 <{$boardUrl}|Ver tablero en Monday.com>" : "";
+
+                $this->chat_post_message($channelId, $successMessage);
+
+                return response()->json(['response_action' => 'clear']);
+            } else {
+                // Return an error
+                Log::error('Failed to create web project', ['error' => $result['error']]);
+
+                return response()->json([
+                    'response_action' => 'errors',
+                    'errors' => [
+                        'project_name' => 'Error al crear el proyecto: ' . $result['error']
+                    ]
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception in web project submission', ['exception' => $e->getMessage()]);
+
+            return response()->json([
+                'response_action' => 'errors',
+                'errors' => [
+                    'project_name' => 'Error interno del servidor: ' . $e->getMessage()
+                ]
+            ]);
+        }
     }
 
     /**
@@ -3074,108 +3333,5 @@ class SlackController extends Controller
             ],
             'blocks' => $blocks
         ];
-    }
-
-    /**
-     * Handle form submission from the Slack modal
-     */
-    public function handleWebProjectSubmit(Request $request)
-    {
-        if (!$this->isValidSlackRequest($request)) {
-            return response('Unauthorized', 401);
-        }
-
-        try {
-            $payload = json_decode($request->input('payload'), true);
-            Log::info('Web project form submitted', ['payload' => $payload]);
-
-            if ($payload['type'] !== 'view_submission' || $payload['view']['callback_id'] !== 'web_project_modal') {
-                return response()->json(['response_action' => 'errors']);
-            }
-
-            $privateMetadata = json_decode($payload['view']['private_metadata'], true);
-            $channelId = $privateMetadata['channel_id'] ?? null;
-
-            $values = $payload['view']['state']['values'];
-
-            // Extract form data
-            $projectName = $values['project_name']['project_name_input']['value'];
-            $projectType = $values['project_type']['project_type_input']['selected_option']['value'];
-
-            // Extract phase dates
-            $phases = [];
-            foreach ($values as $blockId => $blockValues) {
-                if (strpos($blockId, 'phase_') === 0) {
-                    $parts = explode('_', $blockId);
-                    if (count($parts) >= 3) {
-                        $phaseId = $parts[1];
-                        $dateType = $parts[2]; // start or end
-
-                        if (!isset($phases[$phaseId])) {
-                            $phases[$phaseId] = [];
-                        }
-
-                        $actionId = "{$blockId}_input";
-                        $dateValue = $blockValues[$actionId]['selected_date'] ?? null;
-                        $phases[$phaseId][$dateType] = $dateValue;
-                    }
-                }
-            }
-
-            // Extract team assignments
-            $teamAssignments = [];
-            foreach ($values as $blockId => $blockValues) {
-                if (strpos($blockId, 'team_') === 0) {
-                    $team = str_replace('team_', '', $blockId);
-                    $team = str_replace('_', ' ', $team);
-
-                    $actionId = "{$blockId}_input";
-                    $userId = $blockValues[$actionId]['selected_option']['value'] ?? null;
-
-                    if ($userId) {
-                        $teamAssignments[$team] = $userId;
-                    }
-                }
-            }
-
-            // Create the project in Monday.com
-            $webProjectService = new WebProjectService();
-            $result = $webProjectService->createWebProject(
-                $projectName,
-                $projectType,
-                $phases,
-                $teamAssignments
-            );
-
-            if ($result['success']) {
-                // Send a message to the channel with the result
-                $boardUrl = $result['board_url'] ?? '';
-                $successMessage = "✅ Proyecto web *{$projectName}* creado correctamente.\n";
-                $successMessage .= $boardUrl ? "🔗 <{$boardUrl}|Ver tablero en Monday.com>" : "";
-
-                $this->chat_post_message($channelId, $successMessage);
-
-                return response()->json(['response_action' => 'clear']);
-            } else {
-                // Return an error
-                Log::error('Failed to create web project', ['error' => $result['error']]);
-
-                return response()->json([
-                    'response_action' => 'errors',
-                    'errors' => [
-                        'project_name' => 'Error al crear el proyecto: ' . $result['error']
-                    ]
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Exception in web project submission', ['exception' => $e->getMessage()]);
-
-            return response()->json([
-                'response_action' => 'errors',
-                'errors' => [
-                    'project_name' => 'Error interno del servidor: ' . $e->getMessage()
-                ]
-            ]);
-        }
     }
 }

@@ -72,10 +72,9 @@ Route::prefix('monday')->middleware('auth:sanctum')->group(function () {
 Route::get('/webhook/monday/date-change', [MondayWebhookController::class, 'verifyWebhook']);
 Route::post('/webhook/monday/date-change', [MondayWebhookController::class, 'handleDateChangeWebhook']);
 
-// Slack Interactive Components
+// Slack Interactive Components - This single route will handle all interactive components
 Route::post('/slack/interactive', [SlackController::class, 'handleInteractiveAction']);
 Route::post('/slack/web-project', [SlackController::class, 'handleWebProjectCommand']);
-Route::post('/slack/web-project/submit', [SlackController::class, 'handleWebProjectSubmit']);
 
 // Ruta para revocar un token específico
 Route::middleware('auth:sanctum')->delete('/revoke-token/{tokenId}', [TokenController::class, 'revokeToken']);
