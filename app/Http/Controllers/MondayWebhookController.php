@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Monday\MondayClient;
-use App\Monday\Services\UserService;
+use App\Services\Monday\MondayClient;
+use App\Services\Monday\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

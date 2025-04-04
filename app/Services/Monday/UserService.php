@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Monday\Services;
+namespace App\Services\Monday;
 
 use App\Models\User;
-use App\Monday\MondayClient;
 
 class UserService
 {
@@ -34,7 +33,7 @@ class UserService
 
         $response = $this->client->query($query);
         if ($response['status'] === 200) {
-            return $response['data']['data']['users'];
+            return $response[0]['data']['users'];
         }
         return [];
     }

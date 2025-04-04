@@ -2,12 +2,8 @@
 
 namespace App\Console\Commands\sync\Holded;
 
-use App\Http\Controllers\Holded\DocumentsHoldedController;
-use App\Models\Client;
-use App\Models\ClientService;
-use App\Models\Service;
+use App\Services\Sync\Holded\HoldedCustomerServiceSyncService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 class SyncHoldedCustomerServices extends Command
 {
@@ -26,13 +22,22 @@ class SyncHoldedCustomerServices extends Command
     protected $description = 'Sincroniza los servicios recurrentes de clientes desde Holded';
 
     /**
+     * The customer service sync service
+     *
+     * @var HoldedCustomerServiceSyncService
+     */
+    protected $customerServiceSyncService;
+
+    /**
      * Create a new command instance.
      *
+     * @param HoldedCustomerServiceSyncService $customerServiceSyncService
      * @return void
      */
-    public function __construct()
+    public function __construct(HoldedCustomerServiceSyncService $customerServiceSyncService)
     {
         parent::__construct();
+        $this->customerServiceSyncService = $customerServiceSyncService;
     }
 
     /**
@@ -42,137 +47,28 @@ class SyncHoldedCustomerServices extends Command
      */
     public function handle()
     {
-        $this->info('Iniciando sincronización de servicios recurrentes de clientes desde Holded...');
-
-        $documentsHoldedController = new DocumentsHoldedController();
-        $documents = $documentsHoldedController->getDocuments('invoicerecurring');
-
-        if (empty($documents)) {
-            $this->warn('No se encontraron documentos recurrentes en Holded.');
-            return 0;
-        }
-
-        $this->info('Se encontraron ' . count($documents) . ' documentos recurrentes en total.');
-
-        $progress = $this->output->createProgressBar(count($documents));
-        $progress->start();
-
-        $updated = 0;
-        $created = 0;
-        $skipped = 0;
-        $errors = 0;
-
-        foreach ($documents as $document) {
-            try {
-                // Buscar cliente por holded_id
-                $client = Client::where('holded_id', $document['contact']['id'] ?? '')->first();
-
-                if (!$client) {
-                    $skipped++;
-                    if ($this->getOutput()->isVerbose()) {
-                        $this->warn("Cliente no encontrado para el documento recurrente ID: {$document['id']}");
-                    }
-                    $progress->advance();
-                    continue;
-                }
-
-                // Procesar las líneas del documento para cada servicio
-                if (isset($document['items']) && is_array($document['items'])) {
-                    foreach ($document['items'] as $item) {
-                        // Buscar el servicio por holded_id si está disponible, o nombre
-                        $service = null;
-                        if (isset($item['productId'])) {
-                            $service = Service::where('holded_id', $item['productId'])->first();
-                        }
-
-                        if (!$service && isset($item['name'])) {
-                            $service = Service::where('name', $item['name'])->first();
-                        }
-
-                        if (!$service) {
-                            $skipped++;
-                            continue;
-                        }
-
-                        // Crear o actualizar la relación cliente-servicio
-                        $result = ClientService::updateOrCreate(
-                            [
-                                'client_id' => $client->id,
-                                'service_id' => $service->id,
-                                'holded_document_id' => $document['id']
-                            ],
-                            [
-                                'quantity' => $item['units'] ?? 1,
-                                'price' => $item['subtotal'] ?? 0,
-                                'recurring' => true,
-                                'frequency' => $this->parseFrequency($document['recurring'] ?? []),
-                                'status' => 'active'
-                            ]
-                        );
-
-                        if ($result->wasRecentlyCreated) {
-                            $created++;
-                        } else {
-                            $updated++;
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                $errors++;
-                Log::error('Error al sincronizar servicio de cliente: ' . $e->getMessage(), [
-                    'document_id' => $document['id'] ?? 'N/A',
-                    'client' => $document['contact']['name'] ?? 'N/A'
-                ]);
-
-                $this->error("Error con el documento ID: {$document['id']} - " . $e->getMessage());
+        // Configure the output callback
+        $this->customerServiceSyncService->setOutputCallback(function ($message, $type = 'info') {
+            if ($type === 'error') {
+                $this->error($message);
+            } elseif ($type === 'warning') {
+                $this->warn($message);
+            } else {
+                $this->info($message);
             }
+        });
 
-            $progress->advance();
+        // Run the sync
+        $result = $this->customerServiceSyncService->syncCustomerServices();
+
+        // Create progress bar for visual feedback if there are documents
+        if (!empty($result['data']['documents'])) {
+            $progress = $this->output->createProgressBar(count($result['data']['documents']));
+            $progress->start();
+            $progress->finish();
+            $this->newLine(2);
         }
 
-        $progress->finish();
-        $this->newLine(2);
-
-        $this->info('Sincronización de servicios de clientes completada:');
-        $this->info('- Creados: ' . $created);
-        $this->info('- Actualizados: ' . $updated);
-        $this->info('- Omitidos: ' . $skipped);
-
-        if ($errors > 0) {
-            $this->warn('- Errores: ' . $errors . ' (Ver logs para detalles)');
-        }
-
-        return 0;
-    }
-
-    /**
-     * Convierte la configuración de recurrencia de Holded a un formato estándar
-     *
-     * @param array $recurringConfig
-     * @return string
-     */
-    private function parseFrequency(array $recurringConfig): string
-    {
-        if (empty($recurringConfig)) {
-            return 'monthly'; // Valor por defecto
-        }
-
-        $period = $recurringConfig['period'] ?? '';
-        $periodType = $recurringConfig['periodType'] ?? '';
-
-        if ($periodType === 'months' && $period == 1) {
-            return 'monthly';
-        }
-
-        if ($periodType === 'years' && $period == 1) {
-            return 'yearly';
-        }
-
-        if ($periodType === 'weeks' && $period == 1) {
-            return 'weekly';
-        }
-
-        // Para otros casos, retornamos una cadena descriptiva
-        return $period . '_' . $periodType;
+        return $result['success'] ? 0 : 1;
     }
 }

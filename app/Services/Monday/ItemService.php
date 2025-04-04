@@ -1,9 +1,6 @@
 <?php
 
-namespace App\Monday\Services;
-
-use App\Monday\MondayClient;
-use App\Monday\MondayDataDefinitions;
+namespace App\Services\Monday;
 
 class ItemService
 {

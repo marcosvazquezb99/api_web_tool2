@@ -1,8 +1,6 @@
 <?php
 
-namespace App\Monday\Services;
-
-use App\Monday\MondayClient;
+namespace App\Services\Monday;
 
 class BoardService
 {

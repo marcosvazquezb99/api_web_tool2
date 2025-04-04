@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Monday\MondayClient;
-use App\Monday\Services\BoardService;
-use App\Monday\Services\GroupService;
-use App\Monday\Services\ItemService;
-use App\Monday\Services\TimeTrackingService;
-use App\Monday\Services\UserService;
+use App\Services\Monday\BoardService;
+use App\Services\Monday\GroupService;
+use App\Services\Monday\ItemService;
+use App\Services\Monday\MondayClient;
+use App\Services\Monday\TimeTrackingService;
+use App\Services\Monday\UserService;
 use Illuminate\Http\Request;
 
 class MondayController extends Controller

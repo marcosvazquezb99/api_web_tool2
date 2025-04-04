@@ -2,12 +2,8 @@
 
 namespace App\Console\Commands\sync\Holded;
 
-use App\Actions\Helpers\FindFirstMatchingValue;
-use App\Http\Controllers\Holded\ServicesHoldedController;
-use App\Http\Controllers\ServiceController;
-use App\Models\Service;
+use App\Services\Sync\Holded\HoldedServiceSyncService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 class SyncHoldedServices extends Command
 {
@@ -26,13 +22,22 @@ class SyncHoldedServices extends Command
     protected $description = 'Sincroniza los servicios desde Holded a la base de datos local';
 
     /**
+     * The service sync service
+     *
+     * @var HoldedServiceSyncService
+     */
+    protected $serviceSyncService;
+
+    /**
      * Create a new command instance.
      *
+     * @param HoldedServiceSyncService $serviceSyncService
      * @return void
      */
-    public function __construct()
+    public function __construct(HoldedServiceSyncService $serviceSyncService)
     {
         parent::__construct();
+        $this->serviceSyncService = $serviceSyncService;
     }
 
     /**
@@ -42,77 +47,28 @@ class SyncHoldedServices extends Command
      */
     public function handle()
     {
-        $this->info('Iniciando sincronización de servicios desde Holded...');
-
-        $servicesHoldedController = new ServicesHoldedController();
-        $services = $servicesHoldedController->getServices();
-
-        if (empty($services)) {
-            $this->warn('No se encontraron servicios en Holded.');
-            return 0;
-        }
-
-        $this->info('Se encontraron ' . count($services) . ' servicios en total.');
-
-        $progress = $this->output->createProgressBar(count($services));
-        $progress->start();
-
-        $services_types = ServiceController::types;
-
-        $updated = 0;
-        $created = 0;
-        $errors = 0;
-
-        foreach ($services as $service) {
-            try {
-                $service_id = $service['id'];
-                $service_name = $service['name'];
-                $service_description = $service['desc'];
-                $service_tags = $service['tags'];
-
-                $result = Service::updateOrCreate(
-                    ['holded_id' => $service_id],
-                    [
-                        'name' => $service_name,
-                        'type' => FindFirstMatchingValue::run($service_tags, $services_types),
-                        'description' => $service_description,
-                        'recurring' => FindFirstMatchingValue::run($service_tags, ['mensual']) ? 1 : 0,
-                    ]
-                );
-
-                if ($result->wasRecentlyCreated) {
-                    $created++;
-                } else {
-                    $updated++;
-                }
-
-                if ($this->getOutput()->isVerbose()) {
-                    $this->info("Servicio '{$service_name}' actualizado - ID: {$service_id}");
-                }
-            } catch (\Exception $e) {
-                $errors++;
-                Log::error('Error al sincronizar servicio: ' . $e->getMessage(), [
-                    'service' => $service['name'] ?? 'N/A',
-                    'holded_id' => $service['id'] ?? 'N/A'
-                ]);
-
-                $this->error("Error con el servicio: {$service['name']} - " . $e->getMessage());
+        // Configure the output callback
+        $this->serviceSyncService->setOutputCallback(function ($message, $type = 'info') {
+            if ($type === 'error') {
+                $this->error($message);
+            } elseif ($type === 'warning') {
+                $this->warn($message);
+            } else {
+                $this->info($message);
             }
+        });
 
-            $progress->advance();
+        // Run the sync
+        $result = $this->serviceSyncService->syncServices();
+
+        // Create progress bar for visual feedback
+        if (!empty($result['data']['services'])) {
+            $progress = $this->output->createProgressBar(count($result['data']['services']));
+            $progress->start();
+            $progress->finish();
+            $this->newLine(2);
         }
 
-        $progress->finish();
-        $this->newLine(2);
-
-        $this->info('Sincronización de servicios completada:');
-        $this->info('- Creados: ' . $created);
-        $this->info('- Actualizados: ' . $updated);
-
-        if ($errors > 0) {
-            $this->warn('- Errores: ' . $errors . ' (Ver logs para detalles)');
-        }
-
-        return 0;
+        return $result['success'] ? 0 : 1;
     }
 }

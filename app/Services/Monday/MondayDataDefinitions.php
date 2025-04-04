@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Monday;
+namespace App\Services\Monday;
 
 class MondayDataDefinitions
 {

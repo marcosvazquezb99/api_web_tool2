@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Services\Monday\WebProjectService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Request;
@@ -2831,5 +2832,350 @@ class SlackController extends Controller
         }
 
         return response()->json(['status' => 'error', 'message' => 'Action not handled']);
+    }
+
+    /**
+     * Handle the Slack command to create a new web project
+     */
+    public function handleWebProjectCommand(Request $request)
+    {
+        if (!$this->isValidSlackRequest($request)) {
+            return response('Unauthorized', 401);
+        }
+
+        $channelName = $request->input('channel_name');
+        $channelId = $request->input('channel_id');
+        $userId = $request->input('user_id');
+        $triggerId = $request->input('trigger_id');
+
+        // Get the default project name (channel name + _web)
+        $defaultProjectName = $channelName . "_web";
+
+        // Get groups from the template board
+        $mondayController = new MondayController();
+        $webProjectService = new WebProjectService();
+        $templateBoardId = '1901599141'; // Template board ID
+
+        // Get the board groups and team members
+        $boardGroups = $webProjectService->getBoardGroups($templateBoardId);
+        $teamMembers = $webProjectService->getTeamMembers($templateBoardId);
+
+        if (empty($boardGroups)) {
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'No se pudieron obtener las fases del tablero plantilla.'
+            ]);
+        }
+
+        // Create the modal with form elements
+        $modal = $this->buildWebProjectModal($defaultProjectName, $boardGroups, $teamMembers, $channelId);
+
+        // Open the modal
+        $response = $this->client->post($this->url . '/views.open', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->slackToken,
+                'Content-Type' => 'application/json'
+            ],
+            'json' => [
+                'trigger_id' => $triggerId,
+                'view' => $modal
+            ]
+        ]);
+
+        $responseBody = json_decode($response->getBody(), true);
+
+        if (!$responseBody['ok']) {
+            Log::error('Failed to open Slack modal', [
+                'error' => $responseBody['error'] ?? 'Unknown error',
+                'response' => $responseBody
+            ]);
+
+            return response()->json([
+                'response_type' => 'ephemeral',
+                'text' => 'Error al abrir el formulario. Inténtelo de nuevo.'
+            ]);
+        }
+
+        return response('', 200);
+    }
+
+    /**
+     * Build the Slack modal view for web project creation
+     */
+    protected function buildWebProjectModal($defaultProjectName, $boardGroups, $teamMembers, $channelId)
+    {
+        $blocks = [
+            [
+                'type' => 'input',
+                'block_id' => 'project_name',
+                'element' => [
+                    'type' => 'plain_text_input',
+                    'action_id' => 'project_name_input',
+                    'initial_value' => $defaultProjectName
+                ],
+                'label' => [
+                    'type' => 'plain_text',
+                    'text' => 'Nombre del Proyecto'
+                ]
+            ],
+            [
+                'type' => 'input',
+                'block_id' => 'project_type',
+                'element' => [
+                    'type' => 'static_select',
+                    'action_id' => 'project_type_input',
+                    'options' => [
+                        [
+                            'text' => [
+                                'type' => 'plain_text',
+                                'text' => 'Corporativa'
+                            ],
+                            'value' => 'corporate'
+                        ],
+                        [
+                            'text' => [
+                                'type' => 'plain_text',
+                                'text' => 'Ecommerce'
+                            ],
+                            'value' => 'ecommerce'
+                        ]
+                    ]
+                ],
+                'label' => [
+                    'type' => 'plain_text',
+                    'text' => 'Tipo de Proyecto'
+                ]
+            ],
+            [
+                'type' => 'divider'
+            ]
+        ];
+
+        // Add date range inputs for each board group/phase
+        foreach ($boardGroups as $group) {
+            $dateBlocks = [
+                [
+                    'type' => 'section',
+                    'text' => [
+                        'type' => 'mrkdwn',
+                        'text' => "*{$group['title']}*"
+                    ]
+                ],
+                [
+                    'type' => 'input',
+                    'block_id' => "phase_{$group['id']}_start",
+                    'element' => [
+                        'type' => 'datepicker',
+                        'action_id' => "phase_{$group['id']}_start_input",
+                        'placeholder' => [
+                            'type' => 'plain_text',
+                            'text' => 'Selecciona fecha'
+                        ]
+                    ],
+                    'label' => [
+                        'type' => 'plain_text',
+                        'text' => 'Fecha Inicio'
+                    ]
+                ],
+                [
+                    'type' => 'input',
+                    'block_id' => "phase_{$group['id']}_end",
+                    'element' => [
+                        'type' => 'datepicker',
+                        'action_id' => "phase_{$group['id']}_end_input",
+                        'placeholder' => [
+                            'type' => 'plain_text',
+                            'text' => 'Selecciona fecha'
+                        ]
+                    ],
+                    'label' => [
+                        'type' => 'plain_text',
+                        'text' => 'Fecha Fin'
+                    ]
+                ],
+                [
+                    'type' => 'divider'
+                ]
+            ];
+
+            $blocks = array_merge($blocks, $dateBlocks);
+        }
+
+        // Add team member selection blocks
+        $blocks[] = [
+            'type' => 'section',
+            'text' => [
+                'type' => 'mrkdwn',
+                'text' => "*Asignación de Responsables por Equipo*"
+            ]
+        ];
+
+        // Group team members by team
+        $teamGrouped = [];
+        foreach ($teamMembers as $member) {
+            $team = $member['team'];
+            if (!isset($teamGrouped[$team])) {
+                $teamGrouped[$team] = [];
+            }
+            $teamGrouped[$team][] = $member;
+        }
+
+        // Add a select block for each team
+        foreach ($teamGrouped as $team => $members) {
+            $options = [];
+            foreach ($members as $member) {
+                $options[] = [
+                    'text' => [
+                        'type' => 'plain_text',
+                        'text' => $member['name']
+                    ],
+                    'value' => $member['id']
+                ];
+            }
+
+            if (!empty($options)) {
+                $blocks[] = [
+                    'type' => 'input',
+                    'block_id' => "team_" . str_replace(' ', '_', strtolower($team)),
+                    'element' => [
+                        'type' => 'static_select',
+                        'action_id' => "team_" . str_replace(' ', '_', strtolower($team)) . "_input",
+                        'options' => $options,
+                        'placeholder' => [
+                            'type' => 'plain_text',
+                            'text' => 'Selecciona responsable'
+                        ]
+                    ],
+                    'label' => [
+                        'type' => 'plain_text',
+                        'text' => "Equipo: $team"
+                    ]
+                ];
+            }
+        }
+
+        return [
+            'type' => 'modal',
+            'callback_id' => 'web_project_modal',
+            'private_metadata' => json_encode([
+                'channel_id' => $channelId
+            ]),
+            'title' => [
+                'type' => 'plain_text',
+                'text' => 'Crear Proyecto Web'
+            ],
+            'submit' => [
+                'type' => 'plain_text',
+                'text' => 'Crear Proyecto'
+            ],
+            'close' => [
+                'type' => 'plain_text',
+                'text' => 'Cancelar'
+            ],
+            'blocks' => $blocks
+        ];
+    }
+
+    /**
+     * Handle form submission from the Slack modal
+     */
+    public function handleWebProjectSubmit(Request $request)
+    {
+        if (!$this->isValidSlackRequest($request)) {
+            return response('Unauthorized', 401);
+        }
+
+        try {
+            $payload = json_decode($request->input('payload'), true);
+            Log::info('Web project form submitted', ['payload' => $payload]);
+
+            if ($payload['type'] !== 'view_submission' || $payload['view']['callback_id'] !== 'web_project_modal') {
+                return response()->json(['response_action' => 'errors']);
+            }
+
+            $privateMetadata = json_decode($payload['view']['private_metadata'], true);
+            $channelId = $privateMetadata['channel_id'] ?? null;
+
+            $values = $payload['view']['state']['values'];
+
+            // Extract form data
+            $projectName = $values['project_name']['project_name_input']['value'];
+            $projectType = $values['project_type']['project_type_input']['selected_option']['value'];
+
+            // Extract phase dates
+            $phases = [];
+            foreach ($values as $blockId => $blockValues) {
+                if (strpos($blockId, 'phase_') === 0) {
+                    $parts = explode('_', $blockId);
+                    if (count($parts) >= 3) {
+                        $phaseId = $parts[1];
+                        $dateType = $parts[2]; // start or end
+
+                        if (!isset($phases[$phaseId])) {
+                            $phases[$phaseId] = [];
+                        }
+
+                        $actionId = "{$blockId}_input";
+                        $dateValue = $blockValues[$actionId]['selected_date'] ?? null;
+                        $phases[$phaseId][$dateType] = $dateValue;
+                    }
+                }
+            }
+
+            // Extract team assignments
+            $teamAssignments = [];
+            foreach ($values as $blockId => $blockValues) {
+                if (strpos($blockId, 'team_') === 0) {
+                    $team = str_replace('team_', '', $blockId);
+                    $team = str_replace('_', ' ', $team);
+
+                    $actionId = "{$blockId}_input";
+                    $userId = $blockValues[$actionId]['selected_option']['value'] ?? null;
+
+                    if ($userId) {
+                        $teamAssignments[$team] = $userId;
+                    }
+                }
+            }
+
+            // Create the project in Monday.com
+            $webProjectService = new WebProjectService();
+            $result = $webProjectService->createWebProject(
+                $projectName,
+                $projectType,
+                $phases,
+                $teamAssignments
+            );
+
+            if ($result['success']) {
+                // Send a message to the channel with the result
+                $boardUrl = $result['board_url'] ?? '';
+                $successMessage = "✅ Proyecto web *{$projectName}* creado correctamente.\n";
+                $successMessage .= $boardUrl ? "🔗 <{$boardUrl}|Ver tablero en Monday.com>" : "";
+
+                $this->chat_post_message($channelId, $successMessage);
+
+                return response()->json(['response_action' => 'clear']);
+            } else {
+                // Return an error
+                Log::error('Failed to create web project', ['error' => $result['error']]);
+
+                return response()->json([
+                    'response_action' => 'errors',
+                    'errors' => [
+                        'project_name' => 'Error al crear el proyecto: ' . $result['error']
+                    ]
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception in web project submission', ['exception' => $e->getMessage()]);
+
+            return response()->json([
+                'response_action' => 'errors',
+                'errors' => [
+                    'project_name' => 'Error interno del servidor: ' . $e->getMessage()
+                ]
+            ]);
+        }
     }
 }

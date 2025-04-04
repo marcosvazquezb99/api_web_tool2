@@ -74,6 +74,8 @@ Route::post('/webhook/monday/date-change', [MondayWebhookController::class, 'han
 
 // Slack Interactive Components
 Route::post('/slack/interactive', [SlackController::class, 'handleInteractiveAction']);
+Route::post('/slack/web-project', [SlackController::class, 'handleWebProjectCommand']);
+Route::post('/slack/web-project/submit', [SlackController::class, 'handleWebProjectSubmit']);
 
 // Ruta para revocar un token específico
 Route::middleware('auth:sanctum')->delete('/revoke-token/{tokenId}', [TokenController::class, 'revokeToken']);
@@ -97,4 +99,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('servers', ServerController::class);
     Route::apiResource('wp-migrations', \App\Http\Controllers\WpMigrationController::class);
     Route::get('elementor/page-composer', [\App\Http\Controllers\elementorController::class, 'generatePageFromTemplate']);
+});
+
+// Sync routes
+Route::prefix('sync')->group(function () {
+    Route::post('/users', [App\Http\Controllers\SyncController::class, 'syncUsers']);
+    Route::post('/slack-channels', [App\Http\Controllers\SyncController::class, 'syncSlackChannels']);
+    Route::post('/holidays', [App\Http\Controllers\SyncController::class, 'syncHolidays']);
+    Route::post('/boards', [App\Http\Controllers\SyncController::class, 'syncBoards']);
+
+    // Holded routes
+    Route::prefix('holded')->group(function () {
+        Route::post('/services', [App\Http\Controllers\SyncController::class, 'syncHoldedServices']);
+        Route::post('/employees', [App\Http\Controllers\SyncController::class, 'syncHoldedEmployees']);
+        Route::post('/customer-services', [App\Http\Controllers\SyncController::class, 'syncHoldedCustomerServices']);
+        Route::post('/customers', [App\Http\Controllers\SyncController::class, 'syncHoldedCustomers']);
+        Route::post('/all', [App\Http\Controllers\SyncController::class, 'syncAllHolded']);
+    });
 });
