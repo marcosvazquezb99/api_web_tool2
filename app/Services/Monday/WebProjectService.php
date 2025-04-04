@@ -10,6 +10,7 @@ class WebProjectService
     protected ItemService $itemService;
     protected GroupService $groupService;
     protected BoardService $boardService;
+    protected TeamService $teamService;
     protected string $templateBoardId = '1901599141'; // Template board ID
 
     public function __construct()
@@ -18,6 +19,7 @@ class WebProjectService
         $this->itemService = new ItemService($this->mondayClient);
         $this->groupService = new GroupService($this->mondayClient);
         $this->boardService = new BoardService($this->mondayClient);
+        $this->teamService = new TeamService($this->mondayClient);
     }
 
     /**
@@ -39,117 +41,34 @@ class WebProjectService
     }
 
     /**
-     * Get team members from the template board
+     * Get team members from Monday.com teams
      */
-    public function getTeamMembers($boardId = null): array
+    public function getTeamMembers(): array
     {
-        if (!$boardId) {
-            $boardId = $this->templateBoardId;
-        }
-
-        // Get all teams from the template board's "Equipo" column
-        $teams = $this->getTeams($boardId);
-        $teamMembers = [];
-
-        // Get all users in Monday.com
-        $userService = new UserService($this->mondayClient);
-        $usersResponse = $userService->getUsers(1, 100);
-
-        if (!isset($usersResponse['data']['users'])) {
-            return [];
-        }
-
-        $users = $usersResponse['data']['users'];
-
-        // For each user, assign them to their respective teams
-        foreach ($users as $user) {
-            // Determine the user's team(s) - this might require additional logic based on your Monday.com setup
-            // For now, we'll make them available for all teams
-            foreach ($teams as $team) {
-                $teamMembers[] = [
-                    'id' => $user['id'],
-                    'name' => $user['name'],
-                    'team' => $team,
-                    'email' => $user['email'] ?? '',
-                    'photo' => $user['photo_thumb_small'] ?? ''
-                ];
-            }
-        }
-
-        return $teamMembers;
+        // Get all team members organized by teams
+        return $this->teamService->getTeamsWithUsers();
     }
 
     /**
-     * Get all teams from the template board's "Equipo" column
+     * Get all unique team names from Monday.com
      */
-    public function getTeams($boardId = null): array
+    public function getTeams(): array
     {
-        if (!$boardId) {
-            $boardId = $this->templateBoardId;
-        }
+        $teams = $this->teamService->getTeams();
+        $teamNames = [];
 
-        // First get the columns to find the "Equipo" column ID
-        $query = <<<GRAPHQL
-        {
-          boards(ids: ["$boardId"]) {
-            columns {
-              id
-              title
-              type
-            }
-          }
-        }
-        GRAPHQL;
-
-        $columnsResponse = $this->mondayClient->query($query);
-        $equipoColumnId = null;
-
-        if (isset($columnsResponse['data']['boards'][0]['columns'])) {
-            foreach ($columnsResponse['data']['boards'][0]['columns'] as $column) {
-                if (strtolower($column['title']) === 'equipo') {
-                    $equipoColumnId = $column['id'];
-                    break;
-                }
+        foreach ($teams as $team) {
+            if (!empty($team['name']) && !in_array($team['name'], $teamNames)) {
+                $teamNames[] = $team['name'];
             }
         }
 
-        if (!$equipoColumnId) {
-            return ['Desarrollo', 'Diseño', 'Marketing', 'Contenido']; // Default fallback teams
-        }
-
-        // Now get all unique values from the "Equipo" column
-        $query = <<<GRAPHQL
-        {
-          boards(ids: ["$boardId"]) {
-            items {
-              column_values(ids: ["$equipoColumnId"]) {
-                text
-              }
-            }
-          }
-        }
-        GRAPHQL;
-
-        $response = $this->mondayClient->query($query);
-        $teams = [];
-
-        if (isset($response['data']['boards'][0]['items'])) {
-            foreach ($response['data']['boards'][0]['items'] as $item) {
-                if (!empty($item['column_values'][0]['text'])) {
-                    $teamName = trim($item['column_values'][0]['text']);
-                    if (!empty($teamName) && !in_array($teamName, $teams)) {
-                        $teams[] = $teamName;
-                    }
-                }
-            }
-        }
-
-        // If no teams were found, return default teams
-        if (empty($teams)) {
+        // If no teams were found, return default teams as fallback
+        if (empty($teamNames)) {
             return ['Desarrollo', 'Diseño', 'Marketing', 'Contenido'];
         }
 
-        return $teams;
+        return $teamNames;
     }
 
     /**
@@ -172,13 +91,13 @@ class WebProjectService
             // 2. Update phase dates
             foreach ($phases as $phaseId => $dates) {
                 // Find group by ID in the new board
-                $groupResponse = $this->groupService->getGroupsOfBoard($newBoardId);
+                $groupResponse = $this->groupService->getGroupsOfBoard($newBoardId)[0];
                 $groupFound = false;
 
                 foreach ($groupResponse['data']['boards'][0]['groups'] as $group) {
-                    if (strpos($group['id'], $phaseId) !== false) {
+                    if (str_contains($group['id'], $phaseId)) {
                         // Update all items in this group with the start and end dates
-                        $itemsResponse = $this->groupService->getItemsInGroup($newBoardId, $group['id']);
+                        $itemsResponse = $this->groupService->getItemsInGroup($newBoardId, $group['id'])[0];
 
                         if (isset($itemsResponse['data']['boards'][0]['groups'][0]['items'])) {
                             foreach ($itemsResponse['data']['boards'][0]['groups'][0]['items'] as $item) {
@@ -217,31 +136,37 @@ class WebProjectService
             // 3. Assign team members
             foreach ($teamAssignments as $team => $userId) {
                 // Find items with this team and assign the selected person
-                $itemsResponse = $this->itemService->getItemsByBoard($newBoardId);
+                // Find items with this team and assign the selected person
+                $cursor = null;
+                do {
+                    $itemsResponse = $this->itemService->getItemsByBoard($newBoardId, null, $cursor)[0];
+                    $items = $itemsResponse['data']['boards'][0]['items_page']['items'];
+                    $cursor = $itemsResponse['data']['boards'][0]['items_page']['cursor'];
 
-                if (isset($itemsResponse['data']['boards'][0]['items'])) {
-                    foreach ($itemsResponse['data']['boards'][0]['items'] as $item) {
-                        // Check if this item has the team we're looking for
-                        $teamFound = false;
-                        foreach ($item['column_values'] as $columnValue) {
-                            if ($columnValue['column']['title'] === 'Equipo' &&
-                                strtolower($columnValue['text']) === strtolower($team)) {
-                                $teamFound = true;
-                                break;
+                    if (isset($items)) {
+                        foreach ($items as $item) {
+                            // Check if this item has the team we're looking for
+                            $teamFound = false;
+                            foreach ($item['column_values'] as $columnValue) {
+                                if ($columnValue['column']['title'] === 'Equipo' &&
+                                    strtolower($columnValue['text']) === strtolower($team)) {
+                                    $teamFound = true;
+                                    break;
+                                }
+                            }
+
+                            if ($teamFound) {
+                                // Assign the person to this item
+                                $this->itemService->changeColumnValue(
+                                    $newBoardId,
+                                    $item['id'],
+                                    'person',
+                                    '{"personsAndTeams":[{"id":' . $userId . ',"kind":"person"}]}'
+                                );
                             }
                         }
-
-                        if ($teamFound) {
-                            // Assign the person to this item
-                            $this->itemService->changeColumnValue(
-                                $newBoardId,
-                                $item['id'],
-                                'person',
-                                '{"personsAndTeams":[{"id":' . $userId . ',"kind":"person"}]}'
-                            );
-                        }
                     }
-                }
+                } while ($cursor);
             }
 
             return [

@@ -3066,13 +3066,12 @@ class SlackController extends Controller
         $defaultProjectName = $channelName . "_web";
 
         // Get groups from the template board
-        $mondayController = new MondayController();
         $webProjectService = new WebProjectService();
         $templateBoardId = '1901599141'; // Template board ID
 
         // Get the board groups and team members
         $boardGroups = $webProjectService->getBoardGroups($templateBoardId);
-        $teamMembers = $webProjectService->getTeamMembers($templateBoardId);
+        $teamMembers = $webProjectService->getTeamMembers(); // Now using the Monday.com Teams API
 
         if (empty($boardGroups)) {
             return response()->json([
