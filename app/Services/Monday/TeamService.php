@@ -34,7 +34,7 @@ class TeamService
         }
         GRAPHQL;
 
-        $response = $this->client->query($query);
+        $response = $this->client->query($query)[0];
 
         if (isset($response['data']['teams'])) {
             return $response['data']['teams'];

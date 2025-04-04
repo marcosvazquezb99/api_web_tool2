@@ -31,7 +31,7 @@ class WebProjectService
             $boardId = $this->templateBoardId;
         }
 
-        $response = $this->groupService->getGroupsOfBoard($boardId);
+        $response = $this->groupService->getGroupsOfBoard($boardId)[0];
 
         if (!isset($response['data']['boards'][0]['groups'])) {
             return [];
