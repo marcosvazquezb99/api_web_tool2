@@ -18,7 +18,7 @@ class Kernel extends ConsoleKernel
 
         //::::::::::::::::::::::::::    TIME TRACKING    :::::::::::::::::::::::::::::::::::::::::://
         $schedule->command('time-tracking:send-report 0 "Reporte Diario" "simple" "C07R3NTSV09"')->weekdays()->at('19:00');
-        $schedule->command('time-tracking:send-report 30 "Reporte Diario" "simple" "C07R3NTSV09"')->lastDayOfMonth();
+        $schedule->command('time-tracking:send-report 30 "Reporte del Mes" "simple" "C08HENQM8LA"')->lastDayOfMonth();
         $schedule->command('time-tracking:send-report 0 "Reporte Diario" "completo"')->weekdays()->at('19:00');
         $schedule->command('time-tracking:active-boards')->weekdays()->at('08:00');
 //        $schedule->command('time-tracking:send-report 5 "Reporte Semanal" ')->fridays()->at('18:00');

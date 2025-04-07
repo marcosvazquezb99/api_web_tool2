@@ -65,7 +65,7 @@ class BoardsController extends Controller
     //find boards where active is true
     public function getActiveBoards()
     {
-        $clients = Boards::where('active', true)->get();
+        $clients = Boards::where('active', true)->orderBy('name')->get();
         return response()->json($clients);
     }
 }
