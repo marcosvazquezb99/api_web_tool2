@@ -116,29 +116,34 @@ class GroupService
      * @param string $groupId
      * @return array
      */
-    public function getItemsInGroup(string $boardId, string $groupId): array
+    public function getItemsInGroup(string $boardId, string $groupId, $cursor = null): array
     {
+        $cursor = $cursor ? "$cursor" : "null";
         $query = <<<GRAPHQL
         {
             boards(ids: ["$boardId"]) {
                 groups(ids: ["$groupId"]) {
-                    items {
-                        id
-                        name
-                        column_values {
+                    items_page (cursor: $cursor) {
+                        items {
                             id
-                            text
-                            column {
+                            name
+                            column_values {
                                 id
-                                title
-                                type
+                                text
+                                column {
+                                    id
+                                    title
+                                    type
+                                }
                             }
                         }
+                        cursor
                     }
                 }
             }
         }
         GRAPHQL;
+//        dd($query);
 
         return $this->client->query($query);
     }

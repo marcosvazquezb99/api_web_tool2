@@ -79,8 +79,8 @@ class ProcessWebProjectEvents extends Command
                     if (strpos($blockId, 'phase_') === 0) {
                         $parts = explode('_', $blockId);
                         if (count($parts) >= 3) {
-                            $phaseId = $parts[1];
-                            $dateType = $parts[2]; // start or end
+                            $phaseId = $parts[2];
+                            $dateType = $parts[3]; // start or end
 
                             if (!isset($phases[$phaseId])) {
                                 $phases[$phaseId] = [];

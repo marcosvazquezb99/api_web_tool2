@@ -65,14 +65,22 @@ class BoardService
     /**
      * Método para duplicar un tablero en monday.com
      */
-    public function duplicateBoard($boardId, $boardName)
+    public function duplicateBoard($boardId, $boardName, $keepSubscribers = false)
     {
+
+        if ($keepSubscribers) {
+            $keepSubscribers = 'true';
+        } else {
+            $keepSubscribers = 'false';
+        }
+
         $query = <<<GRAPHQL
         mutation {
-            duplicate_board (board_id:$boardId, duplicate_type: duplicate_board_with_pulses_and_updates, board_name: "$boardName") {
+            duplicate_board (board_id:$boardId, duplicate_type: duplicate_board_with_pulses_and_updates, board_name: "$boardName", keep_subscribers: $keepSubscribers) {
                 board {
                     id
                     name
+                    url
                 }
             }
         }

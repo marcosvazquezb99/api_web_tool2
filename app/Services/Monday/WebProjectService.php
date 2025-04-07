@@ -2,6 +2,8 @@
 
 namespace App\Services\Monday;
 
+use App\Http\Actions\HolidayCheckerAction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class WebProjectService
@@ -11,6 +13,12 @@ class WebProjectService
     protected GroupService $groupService;
     protected BoardService $boardService;
     protected TeamService $teamService;
+    /**
+     * Holiday checker action
+     *
+     * @var HolidayCheckerAction
+     */
+    private HolidayCheckerAction $holidayChecker;
     protected string $templateBoardId = '1901599141'; // Template board ID
 
     public function __construct()
@@ -20,6 +28,8 @@ class WebProjectService
         $this->groupService = new GroupService($this->mondayClient);
         $this->boardService = new BoardService($this->mondayClient);
         $this->teamService = new TeamService($this->mondayClient);
+        // Initialize the holiday checker for Madrid
+        $this->holidayChecker = $holidayChecker ?? new HolidayCheckerAction('ES');
     }
 
     /**
@@ -78,9 +88,12 @@ class WebProjectService
     {
         try {
             // 1. Create a new board from template
+            $daysBetweenDatesColumnId = 'numeric_mkpp70x';
+            $stimatedDateColumnId = 'date';
             $newBoardName = $projectName;
-            $duplicateBoardResponse = $this->boardService->duplicateBoard($this->templateBoardId, $newBoardName);
-
+            $duplicateBoardResponse = $this->boardService->duplicateBoard($this->templateBoardId, $newBoardName)[0];
+            sleep(5); // Wait for the board to be created
+//dd(!isset($duplicateBoardResponse['data']['duplicate_board']['board']['id']));
             if (!isset($duplicateBoardResponse['data']['duplicate_board']['board']['id'])) {
                 throw new \Exception('Error creating the board from template');
             }
@@ -88,53 +101,77 @@ class WebProjectService
             $newBoardId = $duplicateBoardResponse['data']['duplicate_board']['board']['id'];
             $boardUrl = $duplicateBoardResponse['data']['duplicate_board']['board']['url'];
 
+
             // 2. Update phase dates
             foreach ($phases as $phaseId => $dates) {
                 // Find group by ID in the new board
                 $groupResponse = $this->groupService->getGroupsOfBoard($newBoardId)[0];
                 $groupFound = false;
 
+
                 foreach ($groupResponse['data']['boards'][0]['groups'] as $group) {
+
                     if (str_contains($group['id'], $phaseId)) {
+                        if (isset($dates['start']) && isset($dates['end'])) {
+                            $groupName = $group['title'] . ' (' . $dates['start'] . ' - ' . $dates['end'] . ')';
+                            $this->groupService->updateGroupTitle($newBoardId, $group['id'], $groupName);
+                        }
+//                        dd($group,$phases, $phaseId);
                         // Update all items in this group with the start and end dates
-                        $itemsResponse = $this->groupService->getItemsInGroup($newBoardId, $group['id'])[0];
+                        $cursor = null;
+                        do {
 
-                        if (isset($itemsResponse['data']['boards'][0]['groups'][0]['items'])) {
-                            foreach ($itemsResponse['data']['boards'][0]['groups'][0]['items'] as $item) {
-                                // Update start date if provided
-                                if (isset($dates['start'])) {
-                                    $this->itemService->changeColumnValue(
-                                        $newBoardId,
-                                        $item['id'],
-                                        'date4',
-                                        '{"date":"' . $dates['start'] . '"}'
-                                    );
-                                }
+                            $itemsResponse = $this->groupService->getItemsInGroup($newBoardId, $group['id'], $cursor)[0];
 
-                                // Update end date if provided
-                                if (isset($dates['end'])) {
-                                    $this->itemService->changeColumnValue(
-                                        $newBoardId,
-                                        $item['id'],
-                                        'date',
-                                        '{"date":"' . $dates['end'] . '"}'
-                                    );
+
+                            if (isset($itemsResponse['data']['boards'][0]['groups'][0]['items_page']['items'])) {
+                                foreach ($itemsResponse['data']['boards'][0]['groups'][0]['items_page']['items'] as $item) {
+                                    // Update start date if provided
+
+                                    if (isset($dates['start'])) {
+//                                        dd($dates['start']);
+                                        $dates['start'] = Carbon::create($dates['start']);
+                                        foreach ($item['column_values'] as $columnValue) {
+                                            if ($columnValue['id'] === $daysBetweenDatesColumnId) {
+
+                                                $daysBetweenDatesValue = $columnValue['text'];
+                                                if ((int)$daysBetweenDatesValue != 0) {
+                                                    $dates['start'] = $dates['start']->addDays($daysBetweenDatesValue);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                        if ($dates['start']->isWeekend() || $this->holidayChecker->isHoliday($dates['start'])) {
+                                            $dates['start'] = $this->holidayChecker->getNextBusinessDay($dates['start']);
+                                        }
+                                        $this->itemService->changeColumnValue(
+                                            $newBoardId,
+                                            $item['id'],
+                                            'date',
+                                            $dates['start']->format('Y-m-d')
+                                        );
+
+                                    }
+//search $daysBetweenDatesColumnId value
+
                                 }
                             }
-                        }
+                            $cursor = $itemsResponse['data']['boards'][0]['groups'][0]['items_page']['cursor'];
+//                            dd('NO ENTRÓ', isset($dates['start'], $dates['end']), $dates['start'], $dates['end']);
+                            $groupFound = true;
+                            break;
 
-                        $groupFound = true;
-                        break;
+                        } while ($cursor !== null);
                     }
                 }
-
+//                dd('NO ENTRO');
                 if (!$groupFound) {
                     Log::warning("Group with ID containing '$phaseId' not found in the new board");
                 }
             }
 
             // 3. Assign team members
-            foreach ($teamAssignments as $team => $userId) {
+            /*foreach ($teamAssignments as $team => $userId) {
                 // Find items with this team and assign the selected person
                 // Find items with this team and assign the selected person
                 $cursor = null;
@@ -167,7 +204,7 @@ class WebProjectService
                         }
                     }
                 } while ($cursor);
-            }
+            }*/
 
             return [
                 'success' => true,

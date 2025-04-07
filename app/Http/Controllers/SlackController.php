@@ -3007,6 +3007,7 @@ class SlackController extends Controller
     protected function handleWebProjectModalSubmit($payload)
     {
         try {
+
             $privateMetadata = json_decode($payload['view']['private_metadata'], true);
             $channelId = $privateMetadata['channel_id'] ?? null;
             $userId = $payload['user']['id'] ?? null;
@@ -3014,6 +3015,8 @@ class SlackController extends Controller
             // Store the entire payload in the events table for processing later
             $event = new Event();
             $event->source = 'slack';
+            $event->title = 'Web Project Creation';
+            $event->start_date = now();
             $event->category = 'web_project_creation';
             $event->status = 'pending';
             $event->external_id = 'slack_' . ($payload['view']['id'] ?? uniqid());
@@ -3115,7 +3118,7 @@ class SlackController extends Controller
     /**
      * Build the Slack modal view for web project creation
      */
-    protected function buildWebProjectModal($defaultProjectName, $boardGroups, $teamMembers, $channelId)
+    protected function buildWebProjectModal($defaultProjectName, $boardGroups, $teamMembers, $channelId): array
     {
         $blocks = [
             [
