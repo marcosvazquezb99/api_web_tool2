@@ -3266,7 +3266,7 @@ class SlackController extends Controller
                     ],
                     'label' => [
                         'type' => 'plain_text',
-                        'text' => "Equipo: $teamName}"
+                        'text' => "Equipo: $teamName"
                     ]
                 ];
             }
