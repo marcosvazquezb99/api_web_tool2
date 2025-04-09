@@ -77,36 +77,40 @@ class ItemService
 
         // Obtener el límite de elementos (items) del tablero
         $limit = $limit ?? $this->limit;
-
+        if (count($rules) > 0 && is_null($cursor)) {
+            $queryParams .= ', query_params:{ rules: [';
+            if (count($rules)) {
+                foreach ($rules as $key => $value) {
+                    $queryParams .= '{column_id: "' . $value['column_id'] . '", operator: ' . $value['operator'] . ', compare_value: ' . json_encode($value['compare_value']) . '}';
+                    if ($key < count($rules) - 1) {
+                        $queryParams .= ',';
+                    }
+                }
+            }
+            $queryParams .= ']}';
+        }
         if ($cursor === null) {
             $cursor = 'null';
         } else {
             $cursor = '"' . $cursor . '"';
         }
-
-        $queryParams .= 'rules: [';
-        if (count($rules)) {
-            foreach ($rules as $key => $value) {
-                $queryParams .= '{column_id: "' . $value['column_id'] . '", operator: ' . $value['operator'] . ', compare_value: ' . json_encode($value['compare_value']) . '}';
-                if ($key < count($rules) - 1) {
-                    $queryParams .= ',';
-                }
-            }
-        }
-        $queryParams .= ']';
-
         $query = <<<GRAPHQL
         {
             boards(limit: 1, ids: ["$boardId"]) {
                 name
                 url
-                items_page(limit: $limit, cursor: $cursor, query_params:{ $queryParams }) {
+                items_page(limit: $limit, cursor: $cursor$queryParams ) {
                     items {
                         id
                         url
                         name
+
                         updated_at
                         column_values {
+                            id
+                            text
+                            value
+                            type
                             $columnsData
                         }
                     }
@@ -122,7 +126,7 @@ class ItemService
     /**
      * Método para cambiar el valor de la columna de un item
      */
-    public function changeColumnValue(string $boardId, string $itemId, string $columnId, string $value)
+    public function changeSimpleColumnValue(string $boardId, string $itemId, string $columnId, string $value)
     {
         $query = <<<GRAPHQL
         mutation {

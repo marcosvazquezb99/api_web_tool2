@@ -3229,7 +3229,8 @@ class SlackController extends Controller
         // Group team members by team - this now uses dynamically fetched teams from Monday
         $teamGrouped = [];
         foreach ($teamMembers as $member) {
-            $team = $member['team'];
+            $team = $member['team_id'];
+
             if (!isset($teamGrouped[$team])) {
                 $teamGrouped[$team] = [];
             }

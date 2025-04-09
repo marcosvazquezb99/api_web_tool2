@@ -76,11 +76,13 @@ class ProcessWebProjectEvents extends Command
                 // Extract phase dates
                 $phases = [];
                 foreach ($values as $blockId => $blockValues) {
-                    if (strpos($blockId, 'phase_') === 0) {
+                    if (str_starts_with($blockId, 'phase_')) {
                         $parts = explode('_', $blockId);
                         if (count($parts) >= 3) {
-                            $phaseId = $parts[2];
-                            $dateType = $parts[3]; // start or end
+                            // slice the array to get the phase name
+                            array_shift($parts); // phase_1
+                            $dateType = array_pop($parts); // start or end
+                            $phaseId = implode('_', $parts);
 
                             if (!isset($phases[$phaseId])) {
                                 $phases[$phaseId] = [];

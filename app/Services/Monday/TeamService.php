@@ -94,6 +94,7 @@ class TeamService
                     'id' => $user['id'],
                     'name' => $user['name'],
                     'team' => $teamName,
+                    'team_id' => $team['id'],
                     'email' => $user['email'] ?? '',
                     'photo' => $user['photo_thumb_small'] ?? ''
                 ];

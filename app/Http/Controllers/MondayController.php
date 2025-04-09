@@ -227,7 +227,7 @@ class MondayController extends Controller
      */
     public function changeColumnValue(string $boardId, string $itemId, string $columnId, string $value): array
     {
-        return $this->itemService->changeColumnValue($boardId, $itemId, $columnId, $value);
+        return $this->itemService->changeSimpleColumnValue($boardId, $itemId, $columnId, $value);
     }
 
     /**
