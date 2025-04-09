@@ -3240,6 +3240,7 @@ class SlackController extends Controller
         // Add a select block for each team
         foreach ($teamGrouped as $team => $members) {
             $options = [];
+            $teamName = $members[0]['team_name'] ?? 'Sin equipo';
             foreach ($members as $member) {
                 $options[] = [
                     'text' => [
@@ -3265,7 +3266,7 @@ class SlackController extends Controller
                     ],
                     'label' => [
                         'type' => 'plain_text',
-                        'text' => "Equipo: $team"
+                        'text' => "Equipo: $teamName}"
                     ]
                 ];
             }
