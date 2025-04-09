@@ -94,7 +94,7 @@ class WebProjectService
         try {
             // 1. Create a new board from template
             $newBoardName = $projectName;
-            $duplicateBoardResponse = $this->boardService->duplicateBoard($this->templateBoardId, $newBoardName)[0];
+            $duplicateBoardResponse = $this->boardService->duplicateBoard($this->templateBoardId, $newBoardName, true)[0];
             sleep(5); // Wait for the board to be created
 //dd(!isset($duplicateBoardResponse['data']['duplicate_board']['board']['id']));
             if (!isset($duplicateBoardResponse['data']['duplicate_board']['board']['id'])) {
